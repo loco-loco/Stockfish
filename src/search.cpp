@@ -386,7 +386,8 @@ void Thread::search() {
   {
       // Set up the new depth for the helper threads
       if (!isMainThread)
-          rootDepth = std::min(DEPTH_MAX - ONE_PLY, Threads.main()->rootDepth + Depth(int(2.2 * log(1 + this->idx))));
+          rootDepth = std::min(DEPTH_MAX - ONE_PLY, 
+              std::max(rootDepth, Threads.main()->rootDepth + Depth(int(2.2 * log(1 + this->idx)))));
 
       // Age out PV variability metric
       if (isMainThread)
