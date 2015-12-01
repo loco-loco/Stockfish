@@ -401,20 +401,21 @@ void Thread::search() {
       for (PVIdx = 0; PVIdx < multiPV && !Signals.stop; ++PVIdx)
       {
           // Reset aspiration window starting size
-          if (rootDepth >= 5 * ONE_PLY  && completedDepth >= 1 * ONE_PLY)
+          if (rootDepth >= 5 * ONE_PLY  && completedDepth > DEPTH_ZERO)
           {
               // Compute average score of all threads with equal or greater completed depth.
-              Value sumScore = rootMoves[PVIdx].previousScore;
-              int count = 1;
+              int64_t sumScore = rootMoves[PVIdx].previousScore;
+              int sumWeight = 1;
               for (Thread* th : Threads)
                 if (th != this && th->completedDepth >= completedDepth && PVIdx < th->rootMoves.size())
-              {
-                  sumScore +=  th->rootMoves[PVIdx].previousScore;
-                  count++;
-              }
-              Value avgScore = sumScore / count; 
+                {
+                    int weight = th->completedDepth - completedDepth + 1;
+                    sumScore  += (th->rootMoves[PVIdx].previousScore) * weight;
+                    sumWeight += weight;
+                }
+              Value avgScore = Value(sumScore / sumWeight); 
 
-              delta = Threads.size() <= 1 ? Value(18) : Value(17);
+              delta = Value(18);
               alpha = std::max(avgScore - delta,-VALUE_INFINITE);
               beta  = std::min(avgScore + delta, VALUE_INFINITE);
           }
