@@ -388,6 +388,10 @@ void Thread::search() {
       if (!isMainThread)
           rootDepth = std::min(DEPTH_MAX - ONE_PLY, Threads.main()->rootDepth + Depth(int(2.2 * log(1 + this->idx))));
 
+      // Do not search above depth limit.
+      if (!isMainThread && Limits.depth && rootDepth > Limits.depth)
+         rootDepth = Depth(Limits.depth);
+
       // Age out PV variability metric
       if (isMainThread)
           BestMoveChanges *= 0.5;
@@ -404,17 +408,17 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY  && completedDepth > DEPTH_ZERO)
           {
               // Compute average score of all threads with equal or greater completed depth.
-              int64_t sumScore = rootMoves[PVIdx].previousScore;
-              int sumWeight = 1;
+              int64_t sumScore = 0;
+              int sumWeight = 0;
               for (Thread* th : Threads)
-                if (th != this && th->completedDepth >= completedDepth && PVIdx < th->rootMoves.size())
+                if (th->completedDepth >= completedDepth && PVIdx < th->rootMoves.size())
                 {
                     int weight = th->completedDepth - completedDepth + 1;
                     sumScore  += (th->rootMoves[PVIdx].previousScore) * weight;
                     sumWeight += weight;
                 }
-              Value avgScore = Value(sumScore / sumWeight); 
 
+              Value avgScore = Value(sumScore / sumWeight); 
               delta = Value(18);
               alpha = std::max(avgScore - delta,-VALUE_INFINITE);
               beta  = std::min(avgScore + delta, VALUE_INFINITE);
