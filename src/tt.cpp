@@ -76,13 +76,16 @@ TTEntry* TranspositionTable::probe(const Key key, bool& found) const {
   const uint16_t key16 = key >> 48;  // Use the high 16 bits as key inside the cluster
 
   for (int i = 0; i < ClusterSize; ++i)
-      if (!tte[i].key16 || tte[i].key16 == key16)
+  {
+      const bool empty = !tte[i].key16 && !tte[i].genBound8;
+      if (empty || tte[i].key16 == key16)
       {
-          if ((tte[i].genBound8 & 0xFC) != generation8 && tte[i].key16)
+          if ((tte[i].genBound8 & 0xFC) != generation8 && !empty)
               tte[i].genBound8 = uint8_t(generation8 | tte[i].bound()); // Refresh
 
-          return found = (bool)tte[i].key16, &tte[i];
+          return found = !empty, &tte[i];
       }
+  }
 
   // Find an entry to be replaced according to the replacement strategy
   TTEntry* replace = tte;
