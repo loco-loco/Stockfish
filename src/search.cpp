@@ -427,8 +427,9 @@ void Thread::search() {
           if (rootDepth >= 5 * ONE_PLY)
           {
               delta = Value(18);
-              alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
-              beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
+              int shift = std::max(-4, std::min(2, int(rootMoves[PVIdx].previousScore) / 128 - 2));
+              alpha = std::max(rootMoves[PVIdx].previousScore - delta + shift,-VALUE_INFINITE);
+              beta  = std::min(rootMoves[PVIdx].previousScore + delta + shift, VALUE_INFINITE);
           }
 
           // Start with a small aspiration window and, in the case of a fail
@@ -469,8 +470,8 @@ void Thread::search() {
               // re-search, otherwise exit the loop.
               if (bestValue <= alpha)
               {
-                  beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  beta = (alpha + beta) / 2 - 6;
+                  alpha = std::max(bestValue - delta - 6, -VALUE_INFINITE);
 
                   if (isMainThread)
                   {
@@ -480,8 +481,8 @@ void Thread::search() {
               }
               else if (bestValue >= beta)
               {
-                  alpha = (alpha + beta) / 2;
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
+                  alpha = (alpha + beta) / 2 + 6;
+                  beta = std::min(bestValue + delta + 6, VALUE_INFINITE);
               }
               else
                   break;
