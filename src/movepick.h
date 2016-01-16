@@ -65,7 +65,17 @@ private:
   T table[PIECE_NB][SQUARE_NB];
 };
 
-typedef Stats<Move> MovesStats;
+template<typename T>
+struct StatsBySq {
+  const T& operator[](Square sq) const { return table[sq]; }
+  T& operator[](Square sq) { return table[sq]; }
+  void clear() { std::memset(table, 0, sizeof(table)); }
+
+private:
+  T table[SQUARE_NB];
+};
+
+typedef StatsBySq<Stats<Move>> MovesStats;
 typedef Stats<Value, false> HistoryStats;
 typedef Stats<Value,  true> CounterMovesStats;
 typedef Stats<CounterMovesStats> CounterMovesHistoryStats;
