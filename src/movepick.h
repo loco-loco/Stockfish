@@ -65,7 +65,6 @@ private:
   T table[PIECE_NB][SQUARE_NB];
 };
 
-typedef Stats<Move> MovesStats;
 typedef Stats<Value, false> HistoryStats;
 typedef Stats<Value,  true> CounterMovesStats;
 typedef Stats<CounterMovesStats> CounterMovesHistoryStats;
@@ -85,7 +84,7 @@ public:
 
   MovePicker(const Position&, Move, Depth, const HistoryStats&, Square);
   MovePicker(const Position&, Move, const HistoryStats&, Value);
-  MovePicker(const Position&, Move, Depth, const HistoryStats&, const CounterMovesStats&, Move, Search::Stack*);
+  MovePicker(const Position&, Move, Depth, const HistoryStats&, const CounterMovesStats&, Search::Stack*);
 
   Move next_move();
 
@@ -99,10 +98,9 @@ private:
   const HistoryStats& history;
   const CounterMovesStats* counterMovesHistory;
   Search::Stack* ss;
-  Move countermove;
   Depth depth;
   Move ttMove;
-  ExtMove killers[3];
+  ExtMove killers[2];
   Square recaptureSquare;
   Value threshold;
   int stage;

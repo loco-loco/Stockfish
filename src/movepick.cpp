@@ -68,8 +68,8 @@ namespace {
 /// ordering is at the current node.
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, const HistoryStats& h,
-                       const CounterMovesStats& cmh, Move cm, Search::Stack* s)
-           : pos(p), history(h), counterMovesHistory(&cmh), ss(s), countermove(cm), depth(d) {
+                       const CounterMovesStats& cmh, Search::Stack* s)
+           : pos(p), history(h), counterMovesHistory(&cmh), ss(s), depth(d) {
 
   assert(d > DEPTH_ZERO);
 
@@ -184,9 +184,8 @@ void MovePicker::generate_next_stage() {
   case KILLERS:
       killers[0] = ss->killers[0];
       killers[1] = ss->killers[1];
-      killers[2] = countermove;
       cur = killers;
-      endMoves = cur + 2 + (countermove != killers[0] && countermove != killers[1]);
+      endMoves = cur + 2;
       break;
 
   case GOOD_QUIETS:
@@ -276,8 +275,7 @@ Move MovePicker::next_move() {
           move = *cur++;
           if (   move != ttMove
               && move != killers[0]
-              && move != killers[1]
-              && move != killers[2])
+              && move != killers[1])
               return move;
           break;
 
