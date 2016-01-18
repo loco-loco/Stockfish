@@ -457,44 +457,32 @@ void Thread::search() {
               for (size_t i = 0; i <= PVIdx; ++i)
                   rootMoves[i].insert_pv_in_tt(rootPos);
 
-              // If search has been stopped break immediately. Sorting and
-              // writing PV back to TT is safe because RootMoves is still
-              // valid, although it refers to previous iteration.
-              if (Signals.stop)
+              // Break immediately, if search was stopped or finished inside
+              // the window. In case of stopped search, sorting and writing
+              // PV back to TT is safe because RootMoves is still valid,
+              // although it refers to previous iteration.
+              if (Signals.stop || (bestValue > alpha && bestValue < beta))
                   break;
 
-              // When failing high/low give some update (without cluttering
-              // the UI) before a re-search.
-              if (   mainThread
-                  && multiPV == 1
-                  && (bestValue <= alpha || bestValue >= beta)
-                  && Time.elapsed() > 3000)
-                  sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
-
-              // In case of failing low/high increase aspiration window and
-              // re-search, otherwise exit the loop.
-              if (bestValue <= alpha)
+              if (mainThread) 
               {
-                  beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  // When failing high/low give some update (without cluttering
+                  // the UI) before a re-search.
+                  if (   multiPV == 1
+                      && Time.elapsed() > 3000)
+                      sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
 
-                  if (mainThread)
+                  if (bestValue <= alpha)
                   {
                       mainThread->failedLow = true;
                       Signals.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta)
-              {
-                  alpha = (alpha + beta) / 2;
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
-              }
-              else
-                  break;
 
-              delta += delta / 4 + 5;
-
-              assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
+              // Increase aspiration window and re-search.
+              alpha = std::max(bestValue - delta,-VALUE_INFINITE);
+              beta  = std::min(bestValue + delta, VALUE_INFINITE);
+              delta += delta * 5 / 16;
           }
 
           // Sort the PV lines searched so far and update the GUI
