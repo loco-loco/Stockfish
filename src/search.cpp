@@ -88,6 +88,24 @@ namespace {
     Move best = MOVE_NONE;
   };
 
+  Value initialDelta = Value(18);
+
+  // How much to increase delta depending on the previous two
+  // interaction results.
+  //     PrevIterResult: 0 = Low, 1 = High, 2 = Initial
+  //     CurrIterResult: 0 = Low, 1 = High
+  // deltaFactor[prevIterResult][currIterResult] 
+  int deltaFactor[3][2] = {{40, 40}, {40, 40}, {0, 0}};
+
+  // How much to shift the aspiration window depending of the
+  // previous two interaction results.
+  // deltaShift[prevIterResult][currIterResult] 
+  int deltaShift[3][2] = {{0, 0}, {0, 0}, {0, 0}};
+
+  TUNE(SetRange(  14,  24), initialDelta);
+  TUNE(SetRange(   0, 128), deltaFactor);
+  TUNE(SetRange(-128, 128), deltaShift);
+
   // EasyMoveManager struct is used to detect a so called 'easy move'; when PV is
   // stable across multiple search iterations we can fast return the best move.
   struct EasyMoveManager {
@@ -429,10 +447,11 @@ void Thread::search() {
       // MultiPV loop. We perform a full root search for each PV line
       for (PVIdx = 0; PVIdx < multiPV && !Signals.stop; ++PVIdx)
       {
+          int prevIterResult = 2; // Initial State
           // Reset aspiration window starting size
           if (rootDepth >= 5 * ONE_PLY)
           {
-              delta = Value(18);
+              delta = Value(initialDelta);
               alpha = std::max(rootMoves[PVIdx].previousScore - delta,-VALUE_INFINITE);
               beta  = std::min(rootMoves[PVIdx].previousScore + delta, VALUE_INFINITE);
           }
@@ -457,44 +476,38 @@ void Thread::search() {
               for (size_t i = 0; i <= PVIdx; ++i)
                   rootMoves[i].insert_pv_in_tt(rootPos);
 
-              // If search has been stopped break immediately. Sorting and
-              // writing PV back to TT is safe because RootMoves is still
-              // valid, although it refers to previous iteration.
-              if (Signals.stop)
+              // Break immediately, if search was stopped or finished inside
+              // the window. In case of stopped search, sorting and writing
+              // PV back to TT is safe because RootMoves is still valid,
+              // although it refers to previous iteration.
+              if (Signals.stop || (bestValue > alpha && bestValue < beta))
                   break;
 
-              // When failing high/low give some update (without cluttering
-              // the UI) before a re-search.
-              if (   mainThread
-                  && multiPV == 1
-                  && (bestValue <= alpha || bestValue >= beta)
-                  && Time.elapsed() > 3000)
-                  sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
-
-              // In case of failing low/high increase aspiration window and
-              // re-search, otherwise exit the loop.
-              if (bestValue <= alpha)
+              if (mainThread)
               {
-                  beta = (alpha + beta) / 2;
-                  alpha = std::max(bestValue - delta, -VALUE_INFINITE);
+                  // When failing high/low give some update (without cluttering
+                  // the UI) before a re-search.
+                  if (   multiPV == 1
+                      && Time.elapsed() > 3000)
+                      sync_cout << UCI::pv(rootPos, rootDepth, alpha, beta) << sync_endl;
 
-                  if (mainThread)
+                  if (bestValue <= alpha)
                   {
                       mainThread->failedLow = true;
                       Signals.stopOnPonderhit = false;
                   }
               }
-              else if (bestValue >= beta)
-              {
-                  alpha = (alpha + beta) / 2;
-                  beta = std::min(bestValue + delta, VALUE_INFINITE);
-              }
-              else
-                  break;
 
-              delta += delta / 4 + 5;
 
-              assert(alpha >= -VALUE_INFINITE && beta <= VALUE_INFINITE);
+              // Increase aspiration window and re-search.
+              int currIterResult = (bestValue >= beta);
+              delta += delta * deltaFactor[prevIterResult][currIterResult] / 128;
+              int shift = delta * deltaShift[prevIterResult][currIterResult] / 128;
+              alpha = std::max(bestValue + shift - delta,-VALUE_INFINITE);
+              beta  = std::min(bestValue + shift + delta, VALUE_INFINITE);
+
+              // Aged Interaction result.
+              prevIterResult = currIterResult;
           }
 
           // Sort the PV lines searched so far and update the GUI
