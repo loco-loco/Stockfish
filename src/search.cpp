@@ -141,6 +141,7 @@ namespace {
   Value value_from_tt(Value v, int ply);
   void update_pv(Move* pv, Move move, Move* childPv);
   void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt);
+  template <int sign> void update_stats_prevCmh(const Position& pos, Stack* ss, Depth depth);
   void check_time();
 
 } // namespace
@@ -679,8 +680,17 @@ namespace {
         ss->currentMove = ttMove; // Can be MOVE_NONE
 
         // If ttMove is quiet, update killers, history, counter move on TT hit
-        if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove))
-            update_stats(pos, ss, ttMove, depth, nullptr, 0);
+        if (ttValue >= beta)
+        {
+            if (ttMove && !pos.capture_or_promotion(ttMove))
+                update_stats(pos, ss, ttMove, depth, nullptr, 0);
+            else if ((ss-1)->moveCount == 1)
+                update_stats_prevCmh<-1>(pos, ss, depth + ONE_PLY);
+        }
+
+        // Bonus for prior countermove that caused the fail low
+        else if (depth >= 3 * ONE_PLY && is_ok((ss - 1)->currentMove))
+           update_stats_prevCmh<+1>(pos, ss, depth);
 
         return ttValue;
     }
@@ -1145,18 +1155,8 @@ moves_loop: // When in check search starts from here
         update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount);
 
     // Bonus for prior countermove that caused the fail low
-    else if (    depth >= 3 * ONE_PLY
-             && !bestMove
-             && !inCheck
-             && !pos.captured_piece_type()
-             && is_ok((ss - 1)->currentMove)
-             && is_ok((ss - 2)->currentMove))
-    {
-        Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
-        Square prevPrevSq = to_sq((ss - 2)->currentMove);
-        CounterMoveStats& prevCmh = CounterMoveHistory[pos.piece_on(prevPrevSq)][prevPrevSq];
-        prevCmh.update(pos.piece_on(prevSq), prevSq, bonus);
-    }
+    else if (depth >= 3 * ONE_PLY && !bestMove && !inCheck)
+        update_stats_prevCmh<+1>(pos, ss, depth);
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
@@ -1458,6 +1458,22 @@ moves_loop: // When in check search starts from here
         Square prevPrevSq = to_sq((ss-2)->currentMove);
         CounterMoveStats& prevCmh = CounterMoveHistory[pos.piece_on(prevPrevSq)][prevPrevSq];
         prevCmh.update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY);
+    }
+  }
+
+
+  // bonus/penalty for move in previous ply.
+  template <int sign>
+  void update_stats_prevCmh(const Position& pos, Stack* ss, Depth depth) {
+    if (   !pos.captured_piece_type()
+        && is_ok((ss-1)->currentMove)
+        && is_ok((ss-2)->currentMove))
+    {
+        Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+        Square prevSq = to_sq((ss-1)->currentMove);
+        Square prevPrevSq = to_sq((ss-2)->currentMove);
+        CounterMoveStats& prevCmh = CounterMoveHistory[pos.piece_on(prevPrevSq)][prevPrevSq];
+        prevCmh.update(pos.piece_on(prevSq), prevSq, sign * bonus);
     }
   }
 
