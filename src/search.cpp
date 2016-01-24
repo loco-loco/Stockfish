@@ -688,10 +688,6 @@ namespace {
                 update_stats_prevCmh<-1>(pos, ss, depth + ONE_PLY);
         }
 
-        // Bonus for prior countermove that caused the fail low
-        else if (depth >= 3 * ONE_PLY && is_ok((ss - 1)->currentMove))
-           update_stats_prevCmh<+1>(pos, ss, depth);
-
         return ttValue;
     }
 
