@@ -30,6 +30,16 @@
 #include "types.h"
 
 
+struct StatValues {
+   operator Value() const { return totalValue; }
+   Value large() const { return totalValue - smallValue; }
+   Value small() const { return smallValue; }
+   void setValues(Value large, Value small) { smallValue = small; totalValue = small + large; }
+
+private:
+   Value totalValue, smallValue;
+};
+
 /// The Stats struct stores moves statistics. According to the template parameter
 /// the class can store History and Countermoves. History records how often
 /// different moves have been successful or unsuccessful during the current search
@@ -53,12 +63,18 @@ struct Stats {
   }
 
   void update(Piece pc, Square to, Value v) {
+    const Value valueLarge = table[pc][to].large();
+    const Value valueSmall = table[pc][to].small();
 
-    if (abs(int(v)) >= 324)
-        return;
+    Value incLarge =   abs(int(v)) >= 324 ? VALUE_ZERO
+                     : - valueLarge * abs(int(v)) / (CM ? 512 : 324)
+                       + int(v) * (CM ? 64 : 32);
 
-    table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 512 : 324);
-    table[pc][to] += int(v) * (CM ? 64 : 32);
+    Value incSmall =   abs(int(v)) >= 81 ? VALUE_ZERO
+                     : - valueSmall * abs(int(v)) / (CM ? 128 : 81)
+                       + int(v) * (CM ? 64 : 32);
+
+    table[pc][to].setValues(valueLarge + incLarge, valueSmall + incSmall);
   }
 
 private:
@@ -66,8 +82,8 @@ private:
 };
 
 typedef Stats<Move> MoveStats;
-typedef Stats<Value, false> HistoryStats;
-typedef Stats<Value,  true> CounterMoveStats;
+typedef Stats<StatValues, false> HistoryStats;
+typedef Stats<StatValues,  true> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
 
 
