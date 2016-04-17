@@ -863,7 +863,8 @@ namespace {
 moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
-    const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
+    const CounterMoveStats& cmh =
+        (ss-1)->counterMoves ? *(ss-1)->counterMoves : CounterMoveHistory[NO_PIECE][SQ_B2];
 
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
