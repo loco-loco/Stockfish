@@ -44,6 +44,9 @@ namespace {
   // 'draw by repetition' detection.
   StateListPtr States(new std::deque<StateInfo>(1));
 
+  // The last move made in the current position (can be MOVE_NONE)
+  Move rootPrevMove = MOVE_NONE;
+
 
   // position() is called when engine receives the "position" UCI command.
   // The function sets up the position described in the given FEN string ("fen")
@@ -72,10 +75,12 @@ namespace {
     pos.set(fen, Options["UCI_Chess960"], &States->back(), Threads.main());
 
     // Parse move list (if any)
+    rootPrevMove = MOVE_NONE;
     while (is >> token && (m = UCI::to_move(pos, token)) != MOVE_NONE)
     {
         States->push_back(StateInfo());
         pos.do_move(m, States->back(), pos.gives_check(m, CheckInfo(pos)));
+        rootPrevMove = m;
     }
   }
 
@@ -132,7 +137,7 @@ namespace {
         else if (token == "infinite")  limits.infinite = 1;
         else if (token == "ponder")    limits.ponder = 1;
 
-    Threads.start_thinking(pos, States, limits);
+    Threads.start_thinking(pos, States, limits, rootPrevMove);
   }
 
 } // namespace

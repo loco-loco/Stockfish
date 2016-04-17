@@ -159,7 +159,7 @@ void benchmark(const Position& current, istream& is) {
       else
       {
           limits.startTime = now();
-          Threads.start_thinking(pos, states, limits);
+          Threads.start_thinking(pos, states, limits, MOVE_NONE);
           Threads.main()->wait_for_search_finished();
           nodes += Threads.nodes_searched();
       }

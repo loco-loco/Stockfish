@@ -170,7 +170,7 @@ int64_t ThreadPool::nodes_searched() {
 /// and starts a new search, then returns immediately.
 
 void ThreadPool::start_thinking(const Position& pos, StateListPtr& states,
-                                const Search::LimitsType& limits) {
+                                const Search::LimitsType& limits, Move rootPrevMove) {
 
   main()->wait_for_search_finished();
 
@@ -197,6 +197,7 @@ void ThreadPool::start_thinking(const Position& pos, StateListPtr& states,
       th->maxPly = 0;
       th->rootDepth = DEPTH_ZERO;
       th->rootMoves = rootMoves;
+      th->rootPrevMove = rootPrevMove;
       th->rootPos.set(pos.fen(), pos.is_chess960(), &setupStates->back(), th);
   }
 

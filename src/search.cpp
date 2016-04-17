@@ -386,6 +386,16 @@ void Thread::search() {
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
 
   std::memset(ss-5, 0, 8 * sizeof(Stack));
+  (ss-2)->counterMoves = &CounterMoveHistory[NO_PIECE][SQ_C2];
+  if (rootPrevMove != MOVE_NONE)
+  {
+      Color us = rootPos.side_to_move();
+      Piece pc =  type_of(rootPrevMove) == CASTLING  ? make_piece(~us, KING)
+                : type_of(rootPrevMove) == PROMOTION ? make_piece(~us, PAWN)
+                : rootPos.piece_on(to_sq(rootPrevMove));
+      (ss-1)->counterMoves = &CounterMoveHistory[pc][to_sq(rootPrevMove)];
+      (ss-1)->currentMove  = rootPrevMove;
+  }
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
