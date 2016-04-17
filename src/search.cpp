@@ -845,8 +845,8 @@ namespace {
             if (pos.legal(move, ci.pinned))
             {
                 ss->currentMove = move;
+                ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
                 pos.do_move(move, st, pos.gives_check(move, ci));
-                ss->counterMoves = &CounterMoveHistory[pos.piece_on(to_sq(move))][to_sq(move)];
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
                 pos.undo_move(move);
                 if (value >= rbeta)
@@ -871,7 +871,7 @@ namespace {
 moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
-    const CounterMoveStats& cmh =  (ss-1)->counterMoves 
+    const CounterMoveStats& cmh =  (ss-1)->counterMoves
                                  ? *(ss-1)->counterMoves
                                  : CounterMoveHistory[NO_PIECE][SQ_B2];
 
@@ -1002,10 +1002,10 @@ moves_loop: // When in check search starts from here
       }
 
       ss->currentMove = move;
+      ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
-      ss->counterMoves = &CounterMoveHistory[pos.piece_on(to_sq(move))][to_sq(move)];
 
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
