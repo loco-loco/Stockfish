@@ -1157,6 +1157,7 @@ moves_loop: // When in check search starts from here
              && is_ok((ss-1)->currentMove))
     {
         Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
+        thisThread->history.update(pos.piece_on(prevSq), prevSq, bonus);
         if ((ss-2)->counterMoves)
             (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
 
@@ -1476,6 +1477,7 @@ moves_loop: // When in check search starts from here
     // Extra penalty for a quiet TT move in previous ply when it gets refuted
     if ((ss-1)->moveCount == 1 && !pos.captured_piece_type())
     {
+        thisThread->history.update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY);
         if ((ss-2)->counterMoves)
             (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY);
 
