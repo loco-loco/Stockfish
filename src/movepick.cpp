@@ -142,13 +142,15 @@ template<>
 void MovePicker::score<QUIETS>() {
 
   const HistoryStats& history = pos.this_thread()->history;
+  const HistoryStats& history_from = pos.this_thread()->history_from;
 
   const CounterMoveStats* cm = (ss-1)->counterMoves;
   const CounterMoveStats* fm = (ss-2)->counterMoves;
   const CounterMoveStats* f2 = (ss-4)->counterMoves;
 
   for (auto& m : *this)
-      m.value =      history[pos.moved_piece(m)][to_sq(m)]
+      m.value = history_from[pos.moved_piece(m)][from_sq(m)]
+               +     history[pos.moved_piece(m)][to_sq(m)]
                + (cm ? (*cm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO);
@@ -160,6 +162,7 @@ void MovePicker::score<EVASIONS>() {
   // by history value, then bad captures and quiet moves with a negative SEE ordered
   // by SEE value.
   const HistoryStats& history = pos.this_thread()->history;
+  const HistoryStats& history_from = pos.this_thread()->history_from;
   Value see;
 
   for (auto& m : *this)
@@ -170,7 +173,8 @@ void MovePicker::score<EVASIONS>() {
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                    - Value(type_of(pos.moved_piece(m))) + HistoryStats::Max;
       else
-          m.value = history[pos.moved_piece(m)][to_sq(m)];
+          m.value = history_from[pos.moved_piece(m)][from_sq(m)]
+                   +     history[pos.moved_piece(m)][to_sq(m)];
 }
 
 

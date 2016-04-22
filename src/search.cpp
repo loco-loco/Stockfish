@@ -212,6 +212,7 @@ void Search::clear() {
   for (Thread* th : Threads)
   {
       th->history.clear();
+      th->history_from.clear();
       th->counterMoves.clear();
   }
 
@@ -1445,6 +1446,7 @@ moves_loop: // When in check search starts from here
     Thread* thisThread = pos.this_thread();
 
     thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
+    thisThread->history_from.update(pos.moved_piece(move), from_sq(move), bonus);
 
     if (cmh)
     {
@@ -1462,6 +1464,7 @@ moves_loop: // When in check search starts from here
     for (int i = 0; i < quietsCnt; ++i)
     {
         thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        thisThread->history_from.update(pos.moved_piece(quiets[i]), from_sq(quiets[i]), -bonus);
 
         if (cmh)
             cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
