@@ -47,6 +47,7 @@ struct Stack {
   bool skipEarlyPruning;
   int moveCount;
   CounterMoveStats* counterMoves;
+  Piece movedPiece;
 };
 
 /// RootMove struct is used for moves at the root of the tree. For each root move

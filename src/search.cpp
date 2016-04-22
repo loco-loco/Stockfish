@@ -658,6 +658,7 @@ namespace {
 
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
     ss->counterMoves = nullptr;
+    ss->movedPiece = NO_PIECE;
     (ss+1)->skipEarlyPruning = false;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
 
@@ -782,6 +783,7 @@ namespace {
     {
         ss->currentMove = MOVE_NULL;
         ss->counterMoves = nullptr;
+        ss->movedPiece = NO_PIECE;
 
         assert(eval - beta >= 0);
 
@@ -838,6 +840,7 @@ namespace {
             {
                 ss->currentMove = move;
                 ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
+                ss->movedPiece = pos.moved_piece(move);
                 pos.do_move(move, st, pos.gives_check(move, ci));
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
                 pos.undo_move(move);
@@ -993,6 +996,7 @@ moves_loop: // When in check search starts from here
 
       ss->currentMove = move;
       ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
+      ss->movedPiece = pos.moved_piece(move);
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
@@ -1004,8 +1008,8 @@ moves_loop: // When in check search starts from here
           && !captureOrPromotion)
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
-          Value hValue = thisThread->history[pos.piece_on(to_sq(move))][to_sq(move)];
-          Value cmhValue = cmh[pos.piece_on(to_sq(move))][to_sq(move)];
+          Value hValue = thisThread->history[ss->movedPiece][to_sq(move)];
+          Value cmhValue = cmh[ss->movedPiece][to_sq(move)];
 
           // Increase reduction for cut nodes and moves with a bad history
           if (   (!PvNode && cutNode)
@@ -1022,7 +1026,7 @@ moves_loop: // When in check search starts from here
           // because the destination square is empty.
           if (   r
               && type_of(move) == NORMAL
-              && type_of(pos.piece_on(to_sq(move))) != PAWN
+              && type_of(ss->movedPiece) != PAWN
               && pos.see(make_move(to_sq(move), from_sq(move))) < VALUE_ZERO)
               r = std::max(DEPTH_ZERO, r - ONE_PLY);
 
@@ -1158,13 +1162,13 @@ moves_loop: // When in check search starts from here
     {
         Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
         if ((ss-2)->counterMoves)
-            (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
+            (ss-2)->counterMoves->update((ss-1)->movedPiece, prevSq, bonus);
 
         if ((ss-3)->counterMoves)
-            (ss-3)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
+            (ss-3)->counterMoves->update((ss-1)->movedPiece, prevSq, bonus);
 
         if ((ss-5)->counterMoves)
-            (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
+            (ss-5)->counterMoves->update((ss-1)->movedPiece, prevSq, bonus);
     }
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
@@ -1477,13 +1481,13 @@ moves_loop: // When in check search starts from here
     if ((ss-1)->moveCount == 1 && !pos.captured_piece_type())
     {
         if ((ss-2)->counterMoves)
-            (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY);
+            (ss-2)->counterMoves->update((ss-1)->movedPiece, prevSq, -bonus - 2 * (depth + 1) / ONE_PLY);
 
         if ((ss-3)->counterMoves)
-            (ss-3)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY);
+            (ss-3)->counterMoves->update((ss-1)->movedPiece, prevSq, -bonus - 2 * (depth + 1) / ONE_PLY);
 
         if ((ss-5)->counterMoves)
-            (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY);
+            (ss-5)->counterMoves->update((ss-1)->movedPiece, prevSq, -bonus - 2 * (depth + 1) / ONE_PLY);
     }
   }
 
