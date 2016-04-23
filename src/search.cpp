@@ -863,7 +863,7 @@ namespace {
 moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
-    const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
+    const CounterMoveStats* cmh = (ss-1)->counterMoves ? (ss-1)->counterMoves : (ss-3)->counterMoves;
 
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
@@ -959,7 +959,7 @@ moves_loop: // When in check search starts from here
           if (   depth <= 4 * ONE_PLY
               && move != ss->killers[0]
               && thisThread->history[pos.moved_piece(move)][to_sq(move)] < VALUE_ZERO
-              && cmh[pos.moved_piece(move)][to_sq(move)] < VALUE_ZERO)
+              && cmh && (*cmh)[pos.moved_piece(move)][to_sq(move)] < VALUE_ZERO)
               continue;
 
           predictedDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO);
@@ -1005,7 +1005,7 @@ moves_loop: // When in check search starts from here
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
           Value hValue = thisThread->history[pos.piece_on(to_sq(move))][to_sq(move)];
-          Value cmhValue = cmh[pos.piece_on(to_sq(move))][to_sq(move)];
+          Value cmhValue = cmh ? (*cmh)[pos.piece_on(to_sq(move))][to_sq(move)] : VALUE_ZERO;
           
           const CounterMoveStats* fm = (ss - 2)->counterMoves;
           const CounterMoveStats* fm2 = (ss - 4)->counterMoves;
