@@ -661,6 +661,11 @@ namespace {
     (ss+1)->skipEarlyPruning = false;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
 
+    if (ss->killers[0] == MOVE_NONE) {
+       ss->killers[0] = (ss-2)->killers[0];
+       ss->killers[1] = (ss-2)->killers[1];
+    }
+
     // Step 4. Transposition table lookup. We don't want the score of a partial
     // search to overwrite a previous full search TT value, so we use a different
     // position key in case of an excluded move.
