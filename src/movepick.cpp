@@ -192,7 +192,7 @@ void MovePicker::generate_next_stage() {
       break;
 
   case KILLERS:
-      killers[0] = ss->killers[0];
+      killers[0] = ss->killers[0] ? ss->killers[0] : (ss+2)->killers[0];
       killers[1] = ss->killers[1];
       killers[2] = countermove;
       cur = killers;
