@@ -1018,7 +1018,8 @@ moves_loop: // When in check search starts from here
               r += ONE_PLY;
 
           // Decrease/increase reduction for moves with a good/bad history
-          int rHist = (hValue + cmhValue + fmValue + fm2Value) / 20000;
+          int rHist = (hValue + cmhValue + fmValue + fm2Value + 2000) / 20000;
+          rHist = std::min(2, std::max(-2, rHist));
           r = std::max(DEPTH_ZERO, r - rHist * ONE_PLY);
 
           // Decrease reduction for moves that escape a capture. Filter out
