@@ -657,6 +657,7 @@ namespace {
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
     ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
+    ss->movedPiece = NO_PIECE;
     ss->counterMoves = nullptr;
     (ss+1)->skipEarlyPruning = false;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
@@ -781,6 +782,7 @@ namespace {
         &&  pos.non_pawn_material(pos.side_to_move()))
     {
         ss->currentMove = MOVE_NULL;
+        ss->movedPiece = NO_PIECE;
         ss->counterMoves = nullptr;
 
         assert(eval - beta >= 0);
@@ -837,6 +839,7 @@ namespace {
             if (pos.legal(move, ci.pinned))
             {
                 ss->currentMove = move;
+                ss->movedPiece = pos.moved_piece(move);
                 ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
                 pos.do_move(move, st, pos.gives_check(move, ci));
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
@@ -992,6 +995,7 @@ moves_loop: // When in check search starts from here
       }
 
       ss->currentMove = move;
+      ss->movedPiece = pos.moved_piece(move);
       ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
 
       // Step 14. Make the move
@@ -1453,7 +1457,8 @@ moves_loop: // When in check search starts from here
 
     if (cmh)
     {
-        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
+        thisThread->counterMoves[(ss-2)->movedPiece][to_sq((ss-2)->currentMove)]
+                         .update((ss-1)->movedPiece, prevSq, move);
         cmh->update(pos.moved_piece(move), to_sq(move), bonus);
     }
 

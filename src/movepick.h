@@ -62,6 +62,7 @@ private:
 };
 
 typedef Stats<Move> MoveStats;
+typedef Stats<MoveStats> MoveStats2;
 typedef Stats<Value, false> HistoryStats;
 typedef Stats<Value,  true> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
