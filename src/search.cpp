@@ -837,8 +837,8 @@ namespace {
             if (pos.legal(move, ci.pinned))
             {
                 ss->currentMove = move;
-                ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
                 pos.do_move(move, st, pos.gives_check(move, ci));
+                ss->counterMoves = &CounterMoveHistory[pos.piece_on(to_sq(move))][to_sq(move)];
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
                 pos.undo_move(move);
                 if (value >= rbeta)
@@ -862,8 +862,7 @@ namespace {
 
 moves_loop: // When in check search starts from here
 
-    Square prevSq = to_sq((ss-1)->currentMove);
-    const CounterMoveStats& cmh = CounterMoveHistory[pos.piece_on(prevSq)][prevSq];
+    const CounterMoveStats* cmh = (ss-1)->counterMoves;
 
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
@@ -958,8 +957,8 @@ moves_loop: // When in check search starts from here
           // History based pruning
           if (   depth <= 4 * ONE_PLY
               && move != ss->killers[0]
-              && thisThread->history[pos.moved_piece(move)][to_sq(move)] < VALUE_ZERO
-              && cmh[pos.moved_piece(move)][to_sq(move)] < VALUE_ZERO)
+              && thisThread->history[pos.to_sq_piece(move)][to_sq(move)] < VALUE_ZERO
+              && cmh && (*cmh)[pos.to_sq_piece(move)][to_sq(move)] < VALUE_ZERO)
               continue;
 
           predictedDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO);
@@ -992,10 +991,10 @@ moves_loop: // When in check search starts from here
       }
 
       ss->currentMove = move;
-      ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
+      ss->counterMoves = &CounterMoveHistory[pos.piece_on(to_sq(move))][to_sq(move)];
 
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
@@ -1005,7 +1004,7 @@ moves_loop: // When in check search starts from here
       {
           Depth r = reduction<PvNode>(improving, depth, moveCount);
           Value hValue = thisThread->history[pos.piece_on(to_sq(move))][to_sq(move)];
-          Value cmhValue = cmh[pos.piece_on(to_sq(move))][to_sq(move)];
+          Value cmhValue = cmh ? (*cmh)[pos.piece_on(to_sq(move))][to_sq(move)] : VALUE_ZERO;
           
           const CounterMoveStats* fm = (ss - 2)->counterMoves;
           const CounterMoveStats* fm2 = (ss - 4)->counterMoves;
@@ -1161,6 +1160,7 @@ moves_loop: // When in check search starts from here
              && !pos.captured_piece_type()
              && is_ok((ss-1)->currentMove))
     {
+        Square prevSq = to_sq((ss-1)->currentMove);
         Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + depth / ONE_PLY - 1);
         if ((ss-2)->counterMoves)
             (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
@@ -1449,33 +1449,33 @@ moves_loop: // When in check search starts from here
     CounterMoveStats* fmh2 = (ss-4)->counterMoves;
     Thread* thisThread = pos.this_thread();
 
-    thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
+    thisThread->history.update(pos.to_sq_piece(move), to_sq(move), bonus);
 
     if (cmh)
     {
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
-        cmh->update(pos.moved_piece(move), to_sq(move), bonus);
+        cmh->update(pos.to_sq_piece(move), to_sq(move), bonus);
     }
 
     if (fmh)
-        fmh->update(pos.moved_piece(move), to_sq(move), bonus);
+        fmh->update(pos.to_sq_piece(move), to_sq(move), bonus);
 
     if (fmh2)
-        fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
+        fmh2->update(pos.to_sq_piece(move), to_sq(move), bonus);
 
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
     {
-        thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        thisThread->history.update(pos.to_sq_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
         if (cmh)
-            cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+            cmh->update(pos.to_sq_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
         if (fmh)
-            fmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+            fmh->update(pos.to_sq_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
         if (fmh2)
-            fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+            fmh2->update(pos.to_sq_piece(quiets[i]), to_sq(quiets[i]), -bonus);
     }
 
     // Extra penalty for a quiet TT move in previous ply when it gets refuted

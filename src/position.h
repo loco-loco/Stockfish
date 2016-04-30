@@ -140,6 +140,7 @@ public:
   bool gives_check(Move m, const CheckInfo& ci) const;
   bool advanced_pawn_push(Move m) const;
   Piece moved_piece(Move m) const;
+  Piece to_sq_piece(Move m) const;
   PieceType captured_piece_type() const;
 
   // Piece specific
@@ -223,6 +224,16 @@ inline bool Position::empty(Square s) const {
 
 inline Piece Position::piece_on(Square s) const {
   return board[s];
+}
+
+inline Piece Position::to_sq_piece(Move m) const {
+  if (type_of(m) == PROMOTION)
+     return make_piece(side_to_move(), promotion_type(m));
+
+  if (type_of(m) == CASTLING)
+     return NO_PIECE;
+
+  return board[from_sq(m)];
 }
 
 inline Piece Position::moved_piece(Move m) const {

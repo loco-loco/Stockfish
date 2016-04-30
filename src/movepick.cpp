@@ -148,10 +148,10 @@ void MovePicker::score<QUIETS>() {
   const CounterMoveStats* f2 = (ss-4)->counterMoves;
 
   for (auto& m : *this)
-      m.value =      history[pos.moved_piece(m)][to_sq(m)]
-               + (cm ? (*cm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
-               + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
-               + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO);
+      m.value =      history[pos.to_sq_piece(m)][to_sq(m)]
+               + (cm ? (*cm)[pos.to_sq_piece(m)][to_sq(m)] : VALUE_ZERO)
+               + (fm ? (*fm)[pos.to_sq_piece(m)][to_sq(m)] : VALUE_ZERO)
+               + (f2 ? (*f2)[pos.to_sq_piece(m)][to_sq(m)] : VALUE_ZERO);
 }
 
 template<>
@@ -170,7 +170,7 @@ void MovePicker::score<EVASIONS>() {
           m.value =  PieceValue[MG][pos.piece_on(to_sq(m))]
                    - Value(type_of(pos.moved_piece(m))) + HistoryStats::Max;
       else
-          m.value = history[pos.moved_piece(m)][to_sq(m)];
+          m.value = history[pos.to_sq_piece(m)][to_sq(m)];
 }
 
 
