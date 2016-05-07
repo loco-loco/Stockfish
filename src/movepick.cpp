@@ -148,10 +148,16 @@ void MovePicker::score<QUIETS>() {
   const CounterMoveStats* f2 = (ss-4)->counterMoves;
 
   for (auto& m : *this)
+    if (m != ttMove && m != killers[0] && m != killers[1] && m != killers[2])
+    {
       m.value =      history[pos.moved_piece(m)][to_sq(m)]
                + (cm ? (*cm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO);
+    } else {
+      m.move  = MOVE_NONE;
+      m.value = -HistoryStats::Max; // At the Bottom
+    }
 }
 
 template<>
@@ -278,10 +284,7 @@ Move MovePicker::next_move() {
 
       case ALL_QUIETS:
           move = *cur++;
-          if (   move != ttMove
-              && move != killers[0]
-              && move != killers[1]
-              && move != killers[2])
+          if (move != MOVE_NONE)
               return move;
           break;
 
