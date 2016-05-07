@@ -155,8 +155,8 @@ void MovePicker::score<QUIETS>() {
                + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO);
     } else {
-      m.move  = MOVE_NONE;
-      m.value = -HistoryStats::Max; // At the Bottom
+      // Delete this move, by copying the first move to this spot, and increase the head pointer.
+      m = *cur++;
     }
 }
 
