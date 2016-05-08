@@ -36,17 +36,22 @@ namespace {
   };
 
   // Our insertion sort, which is guaranteed to be stable, as it should be
-  void insertion_sort(ExtMove* begin, ExtMove* end)
+  ExtMove* insertion_sort(ExtMove* begin, ExtMove* end)
   {
     ExtMove tmp, *p, *q;
-
-    for (p = begin + 1; p < end; ++p)
+    ExtMove* top = end;
+    for (p = end - 1; p >= begin; --p)
     {
         tmp = *p;
-        for (q = p; q != begin && *(q-1) < tmp; --q)
-            *q = *(q-1);
-        *q = tmp;
+        if (tmp.move != MOVE_NONE)
+        {
+            top--;
+            for (q = top; q < end - 1 && tmp < *(q+1); ++q)
+                *q = *(q+1);
+            *q = tmp;
+        }
     }
+    return top;
   }
 
   // pick_best() finds the best move in the range (begin, end) and moves it to
@@ -155,8 +160,8 @@ void MovePicker::score<QUIETS>() {
                + (fm ? (*fm)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO)
                + (f2 ? (*f2)[pos.moved_piece(m)][to_sq(m)] : VALUE_ZERO);
     } else {
-      // Delete this move, by copying the first move to this spot, and increase the head pointer.
-      m = *cur++;
+      m.move = MOVE_NONE;
+      m.value = HistoryStats::Max;
     }
 }
 
@@ -210,7 +215,7 @@ void MovePicker::generate_next_stage() {
       score<QUIETS>();
       if (depth < 3 * ONE_PLY)
           endGoodQuiets = std::partition(cur, endMoves, [](const ExtMove& m) { return m.value > VALUE_ZERO; });
-      insertion_sort(cur, endGoodQuiets);
+      cur = insertion_sort(cur, endGoodQuiets);
       break;
 
   case BAD_CAPTURES:
@@ -283,10 +288,7 @@ Move MovePicker::next_move() {
           break;
 
       case ALL_QUIETS:
-          move = *cur++;
-          if (move != MOVE_NONE)
-              return move;
-          break;
+          return *cur++;
 
       case BAD_CAPTURES:
           return *cur--;
