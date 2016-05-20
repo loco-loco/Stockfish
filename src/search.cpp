@@ -1465,18 +1465,19 @@ moves_loop: // When in check search starts from here
 
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
-    {
-        thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+      if (to_sq(quiets[i]) != to_sq(move) || pos.moved_piece(quiets[i]) != pos.moved_piece(move))
+        {
+          thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
-        if (cmh)
-            cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+          if (cmh)
+              cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
-        if (fmh)
-            fmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+          if (fmh)
+              fmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
 
-        if (fmh2)
-            fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
-    }
+          if (fmh2)
+              fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        }
 
     // Extra penalty for a quiet TT move in previous ply when it gets refuted
     if ((ss-1)->moveCount == 1 && !pos.captured_piece_type())
