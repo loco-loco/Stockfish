@@ -381,12 +381,12 @@ void MainThread::search() {
 
 void Thread::search() {
 
-  Stack stack[MAX_PLY+7], *ss = stack+5; // To allow referencing (ss-5) and (ss+2)
+  Stack stack[MAX_PLY+8], *ss = stack+6; // To allow referencing (ss-6) and (ss+2)
   Value bestValue, alpha, beta, delta;
   Move easyMove = MOVE_NONE;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
 
-  std::memset(ss-5, 0, 8 * sizeof(Stack));
+  std::memset(ss-6, 0, 9 * sizeof(Stack));
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
@@ -865,9 +865,10 @@ namespace {
 moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
-    const CounterMoveStats* cmh  = (ss-1)->counterMoves;
-    const CounterMoveStats* fmh  = (ss-2)->counterMoves;
-    const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
+    const CounterMoveStats* cmh  = (ss-1)->counterMoves ? (ss-1)->counterMoves : (ss-3)->counterMoves;
+    const CounterMoveStats* fmh  = (ss-2)->counterMoves ? (ss-2)->counterMoves : (ss-4)->counterMoves;
+    const CounterMoveStats* fmh2 = (ss-4)->counterMoves && (ss-4)->counterMoves != fmh ?
+                                   (ss-4)->counterMoves : (ss-6)->counterMoves;
 
     MovePicker mp(pos, ttMove, depth, ss);
     CheckInfo ci(pos);
@@ -964,8 +965,7 @@ moves_loop: // When in check search starts from here
           if (   depth <= 4 * ONE_PLY
               && move != ss->killers[0]
               && (!cmh  || (*cmh )[moved_piece][to_sq(move)] < VALUE_ZERO)
-              && (!fmh  || (*fmh )[moved_piece][to_sq(move)] < VALUE_ZERO)
-              && (!fmh2 || (*fmh2)[moved_piece][to_sq(move)] < VALUE_ZERO || (cmh && fmh)))
+              && (!fmh  || (*fmh )[moved_piece][to_sq(move)] < VALUE_ZERO))
               continue;
 
           predictedDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO);
