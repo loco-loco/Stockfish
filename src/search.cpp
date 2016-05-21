@@ -865,7 +865,7 @@ namespace {
 moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
-    const CounterMoveStats* cmh  = (ss-1)->counterMoves;
+    const CounterMoveStats* cmh  = (ss-1)->counterMoves ? (ss-1)->counterMoves : (ss-3)->counterMoves;
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
