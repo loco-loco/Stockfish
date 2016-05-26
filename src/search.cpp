@@ -865,7 +865,7 @@ namespace {
 moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
-    const CounterMoveStats* cmh  = (ss-1)->counterMoves ? (ss-1)->counterMoves : (ss-3)->counterMoves;
+    const CounterMoveStats* cmh  = (ss-1)->counterMoves;
     const CounterMoveStats* fmh  = (ss-2)->counterMoves ? (ss-2)->counterMoves : (ss-4)->counterMoves;
     const CounterMoveStats* fmh2 = (ss-4)->counterMoves && (ss-4)->counterMoves != fmh ?
                                    (ss-4)->counterMoves : (ss-6)->counterMoves;
@@ -965,7 +965,8 @@ moves_loop: // When in check search starts from here
           if (   depth <= 4 * ONE_PLY
               && move != ss->killers[0]
               && (!cmh  || (*cmh )[moved_piece][to_sq(move)] < VALUE_ZERO)
-              && (!fmh  || (*fmh )[moved_piece][to_sq(move)] < VALUE_ZERO))
+              && (!fmh  || (*fmh )[moved_piece][to_sq(move)] < VALUE_ZERO)
+              && (!fmh2 || (*fmh2)[moved_piece][to_sq(move)] < VALUE_ZERO || (cmh && fmh)))
               continue;
 
           predictedDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO);
