@@ -1017,12 +1017,12 @@ moves_loop: // When in check search starts from here
           // hence break make_move(). Also use see() instead of see_sign(),
           // because the destination square is empty.
           else if (   type_of(move) == NORMAL
-                   && type_of(pos.piece_on(to_sq(move))) != PAWN
+                   && type_of(moved_piece) != PAWN
                    && pos.see(make_move(to_sq(move), from_sq(move))) < VALUE_ZERO)
               r -= ONE_PLY;
 
           // Decrease/increase reduction for moves with a good/bad history
-          int rHist = (val - 10000) / 20000;
+          int rHist = (val + (val < 0 ? -10000 : 10000)) / 20000;
           r = std::max(DEPTH_ZERO, r - rHist * ONE_PLY);
 
           Depth d = std::max(newDepth - r, ONE_PLY);
