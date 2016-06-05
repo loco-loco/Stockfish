@@ -81,7 +81,7 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
 }
 
 MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Square s)
-           : pos(p) {
+           : pos(p), ss(nullptr) {
 
   assert(d <= DEPTH_ZERO);
 
@@ -159,7 +159,9 @@ void MovePicker::score<EVASIONS>() {
   // Try winning and equal captures ordered by MVV/LVA, then non-captures ordered
   // by history value, then bad captures and quiet moves with a negative SEE ordered
   // by SEE value.
-  const HistoryStats& history = pos.this_thread()->history;
+  const HistoryStats& history =   !ss || !(ss-2)->counterMoves
+                               ? pos.this_thread()->history
+                               : *((HistoryStats *) (ss-2)->counterMoves);
   Value see;
 
   for (auto& m : *this)
