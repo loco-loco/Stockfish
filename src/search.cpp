@@ -1163,9 +1163,11 @@ moves_loop: // When in check search starts from here
         if ((ss-2)->counterMoves)
             (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
 
-        CounterMoveStats* fmhOrCmh2  = (ss-3)->counterMoves ? (ss-3)->counterMoves : (ss-4)->counterMoves;
-        if (fmhOrCmh2)
-            fmhOrCmh2->update(pos.piece_on(prevSq), prevSq, bonus);
+        if ((ss-3)->counterMoves)
+            (ss-3)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
+
+        else if ((ss-4)->counterMoves)
+            (ss-4)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
 
         if ((ss-5)->counterMoves)
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
@@ -1444,7 +1446,8 @@ moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
     CounterMoveStats* cmh  = (ss-1)->counterMoves;
-    CounterMoveStats* fmh  = (ss-2)->counterMoves ? (ss-2)->counterMoves : (ss-3)->counterMoves;
+    CounterMoveStats* fmh  = (ss-2)->counterMoves;
+    CounterMoveStats* cmh2 = (ss-3)->counterMoves;
     CounterMoveStats* fmh2 = (ss-4)->counterMoves;
     Thread* thisThread = pos.this_thread();
 
@@ -1458,6 +1461,9 @@ moves_loop: // When in check search starts from here
 
     if (fmh)
         fmh->update(pos.moved_piece(move), to_sq(move), bonus);
+
+    else if (cmh2)
+        cmh2->update(pos.moved_piece(move), to_sq(move), bonus);
 
     if (fmh2)
         fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
@@ -1483,9 +1489,11 @@ moves_loop: // When in check search starts from here
         if ((ss-2)->counterMoves)
             (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
 
-        CounterMoveStats* fmhOrCmh2  = (ss-3)->counterMoves ? (ss-3)->counterMoves : (ss-4)->counterMoves;
-        if (fmhOrCmh2)
-            fmhOrCmh2->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
+        if ((ss-3)->counterMoves)
+            (ss-3)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
+
+        else if ((ss-4)->counterMoves)
+            (ss-4)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
 
         if ((ss-5)->counterMoves)
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
