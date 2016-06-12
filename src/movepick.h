@@ -54,7 +54,7 @@ struct Stats {
         return;
 
     table[pc][to] -= table[pc][to] * abs(int(v)) / (CM ? 936 : 324);
-    table[pc][to] += int(v) * 32;
+    table[pc][to] += int(v);
   }
 
 private:

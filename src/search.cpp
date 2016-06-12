@@ -981,7 +981,7 @@ moves_loop: // When in check search starts from here
               r -= 2 * ONE_PLY;
 
           // Decrease/increase reduction for moves with a good/bad history
-          int rHist = (val - 10000) / 20000;
+          int rHist = (val - 313) / 625;
           r = std::max(DEPTH_ZERO, r - rHist * ONE_PLY);
 
           Depth d = std::max(newDepth - r, ONE_PLY);
@@ -1114,7 +1114,7 @@ moves_loop: // When in check search starts from here
              && !pos.captured_piece_type()
              && is_ok((ss-1)->currentMove))
     {
-        Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + 2 * depth / ONE_PLY - 2);
+        Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + 2 * depth / ONE_PLY - 1);
         if ((ss-2)->counterMoves)
             (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
 
@@ -1394,7 +1394,7 @@ moves_loop: // When in check search starts from here
         ss->killers[0] = move;
     }
 
-    Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + 2 * depth / ONE_PLY - 2);
+    Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + 2 * depth / ONE_PLY - 1);
 
     Square prevSq = to_sq((ss-1)->currentMove);
     CounterMoveStats* cmh  = (ss-1)->counterMoves;
