@@ -1446,8 +1446,7 @@ moves_loop: // When in check search starts from here
 
     Square prevSq = to_sq((ss-1)->currentMove);
     CounterMoveStats* cmh  = (ss-1)->counterMoves;
-    CounterMoveStats* fmh  = (ss-2)->counterMoves;
-    CounterMoveStats* cmh2 = (ss-3)->counterMoves;
+    CounterMoveStats* fmh  = (ss-2)->counterMoves ? (ss-2)->counterMoves : (ss-3)->counterMoves;
     CounterMoveStats* fmh2 = (ss-4)->counterMoves;
     Thread* thisThread = pos.this_thread();
 
@@ -1461,9 +1460,6 @@ moves_loop: // When in check search starts from here
 
     if (fmh)
         fmh->update(pos.moved_piece(move), to_sq(move), bonus);
-
-    else if (cmh2)
-        cmh2->update(pos.moved_piece(move), to_sq(move), bonus);
 
     if (fmh2)
         fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
