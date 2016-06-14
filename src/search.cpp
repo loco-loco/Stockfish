@@ -157,7 +157,7 @@ namespace {
 
   EasyMoveManager EasyMove;
   Value DrawValue[COLOR_NB];
-  CounterMoveHistoryStats CounterMoveHistory;
+  CounterMoveHistoryStats CounterMoveHistory[2];
 
   template <NodeType NT>
   Value search(Position& pos, Stack* ss, Value alpha, Value beta, Depth depth, bool cutNode);
@@ -207,7 +207,8 @@ void Search::init() {
 void Search::clear() {
 
   TT.clear();
-  CounterMoveHistory.clear();
+  CounterMoveHistory[0].clear();
+  CounterMoveHistory[1].clear();
 
   for (Thread* th : Threads)
   {
@@ -794,7 +795,7 @@ namespace {
             if (pos.legal(move, ci.pinned))
             {
                 ss->currentMove = move;
-                ss->counterMoves = &CounterMoveHistory[pos.moved_piece(move)][to_sq(move)];
+                ss->counterMoves = &CounterMoveHistory[pos.capture_or_promotion(move) && type_of(pos.moved_piece(move)) == PAWN][pos.moved_piece(move)][to_sq(move)];
                 pos.do_move(move, st, pos.gives_check(move, ci));
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
                 pos.undo_move(move);
@@ -950,7 +951,7 @@ moves_loop: // When in check search starts from here
       }
 
       ss->currentMove = move;
-      ss->counterMoves = &CounterMoveHistory[moved_piece][to_sq(move)];
+      ss->counterMoves = &CounterMoveHistory[captureOrPromotion && type_of(moved_piece) == PAWN][moved_piece][to_sq(move)];
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
