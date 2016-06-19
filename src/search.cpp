@@ -919,7 +919,7 @@ moves_loop: // When in check search starts from here
               && move != ss->killers[0]
               && (!cmh  || (*cmh )[moved_piece][to_sq(move)] < VALUE_ZERO)
               && (!fmh  || (*fmh )[moved_piece][to_sq(move)] < VALUE_ZERO)
-              && (!fmh2 || (*fmh2)[moved_piece][to_sq(move)] < VALUE_ZERO || (cmh && fmh)))
+              && (!fmh2 || (*fmh2)[moved_piece][to_sq(move)] < VALUE_ZERO || (!PvNode && ((cmh && fmh) || cutNode))))
               continue;
 
           predictedDepth = std::max(newDepth - reduction<PvNode>(improving, depth, moveCount), DEPTH_ZERO);
