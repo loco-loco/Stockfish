@@ -36,17 +36,22 @@
 
 struct TTEntry {
 
-  Move  move()  const { return (Move )move16; }
-  Value value() const { return (Value)value16; }
-  Value eval()  const { return (Value)eval16; }
-  Depth depth() const { return (Depth)depth8; }
-  Bound bound() const { return (Bound)(genBound8 & 0x3); }
+  Move  move()   const { return (Move )move16; }
+  Value value()  const { return (Value)value16; }
+  Value eval()   const { return (Value)eval16; }
+  Depth depth()  const { return (Depth)depth8; }
+  Bound bound()  const { return (Bound)(genBound8 & 0x3); }
+  Move  killer() const { return (Move)killer16; }
 
-  void save(Key k, Value v, Bound b, Depth d, Move m, Value ev, uint8_t g) {
+  void save(Key k, Value v, Bound b, Depth d, Move m, Value ev, uint8_t g, Move km) {
 
     // Preserve any existing move for the same position
     if (m || (k >> 48) != key16)
         move16 = (uint16_t)m;
+
+    // Preserve any existing followup killer move for the same position
+    if (km || (k >> 48) != key16)
+        killer16 = (uint16_t)km;
 
     // Don't overwrite more valuable entries
     if (  (k >> 48) != key16
@@ -71,6 +76,7 @@ private:
   int16_t  eval16;
   uint8_t  genBound8;
   int8_t   depth8;
+  uint16_t killer16;
 };
 
 
@@ -84,11 +90,11 @@ private:
 class TranspositionTable {
 
   static const int CacheLineSize = 64;
-  static const int ClusterSize = 3;
+  static const int ClusterSize = 5;
 
   struct Cluster {
     TTEntry entry[ClusterSize];
-    char padding[2]; // Align to a divisor of the cache line size
+    char padding[4]; // Align to a divisor of the cache line size
   };
 
   static_assert(CacheLineSize % sizeof(Cluster) == 0, "Cluster size incorrect");
