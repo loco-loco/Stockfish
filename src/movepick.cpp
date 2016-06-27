@@ -206,7 +206,7 @@ void MovePicker::generate_next_stage() {
       {
           ExtMove* goodQuiet = std::partition(cur, endMoves, [](const ExtMove& m)
                                              { return m.value > VALUE_ZERO; });
-          insertion_sort(cur, goodQuiet);
+          insertion_sort(cur, cur != goodQuiet ? goodQuiet : endMoves);
       } else
           insertion_sort(cur, endMoves);
       break;
