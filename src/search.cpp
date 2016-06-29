@@ -1118,6 +1118,14 @@ moves_loop: // When in check search starts from here
 
         if ((ss-5)->counterMoves)
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
+
+        if (!(ss-1)->killers[1] && (ss-1)->killers[0] != (ss-1)->currentMove)
+        {
+            if (!(ss-1)->killers[0])
+                (ss-1)->killers[0] = (ss-1)->currentMove;
+            else
+                (ss-1)->killers[1] = (ss-1)->currentMove;
+        }
     }
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
