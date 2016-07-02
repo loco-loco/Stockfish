@@ -1363,12 +1363,12 @@ moves_loop: // When in check search starts from here
   void update_stats(const Position& pos, Stack* ss, Move move, bool failLow,
                     Depth depth, Move* quiets, int quietsCnt) {
 
-    Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + 2 * depth / ONE_PLY - 2);
-    Square prevSq = to_sq((ss-1)->currentMove);
-
     // Update stats for current best quiet move.
     if (!failLow && move && !pos.capture_or_promotion(move))
     {
+        Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + 2 * depth / ONE_PLY - 2);
+        Square prevSq = to_sq((ss-1)->currentMove);
+
         if (ss->killers[0] != move)
         {
             ss->killers[1] = ss->killers[0];
@@ -1408,19 +1408,19 @@ moves_loop: // When in check search starts from here
             if (fmh2)
                 fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
         }
-    }
 
-    // Extra penalty for a quiet TT move in previous ply when it gets refuted.
-    if (!failLow && (ss-1)->moveCount == 1 && !pos.captured_piece_type())
-    {
-        if ((ss-2)->counterMoves)
-            (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
+        // Extra penalty for a quiet TT move in previous ply when it gets refuted by another quiet move.
+        if ((ss-1)->moveCount == 1 && !pos.captured_piece_type())
+        {
+            if ((ss-2)->counterMoves)
+                (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
 
-        if ((ss-3)->counterMoves)
-            (ss-3)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
+            if ((ss-3)->counterMoves)
+                (ss-3)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
 
-        if ((ss-5)->counterMoves)
-            (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
+            if ((ss-5)->counterMoves)
+                (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
+        }
     }
 
     // Bonus for prior countermove that caused the fail low.
@@ -1429,6 +1429,9 @@ moves_loop: // When in check search starts from here
              && !pos.captured_piece_type()
              && is_ok((ss-1)->currentMove))
     {
+        Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + 2 * depth / ONE_PLY - 2);
+        Square prevSq = to_sq((ss-1)->currentMove);
+
         if ((ss-2)->counterMoves)
             (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
 
