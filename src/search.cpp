@@ -168,7 +168,7 @@ namespace {
   Value value_to_tt(Value v, int ply);
   Value value_from_tt(Value v, int ply);
   void update_pv(Move* pv, Move move, Move* childPv);
-  void update_stats(const Position& pos, Stack* ss, Move move, Depth depth, Move* quiets, int quietsCnt);
+  void update_stats(const Position& pos, Stack* ss, Move move, bool failLow, Depth depth, Move* quiets, int quietsCnt);
   void check_time();
 
 } // namespace
@@ -634,9 +634,8 @@ namespace {
     {
         ss->currentMove = ttMove; // Can be MOVE_NONE
 
-        // If ttMove is quiet, update killers, history, counter move on TT hit
-        if (ttValue >= beta && ttMove && !pos.capture_or_promotion(ttMove))
-            update_stats(pos, ss, ttMove, depth, nullptr, 0);
+        // Update killers, history, counter move on TT hit
+        update_stats(pos, ss, ttMove, ttValue <= alpha, depth, nullptr, 0);
 
         return ttValue;
     }
@@ -1098,27 +1097,9 @@ moves_loop: // When in check search starts from here
         bestValue = excludedMove ? alpha
                    :     inCheck ? mated_in(ss->ply) : DrawValue[pos.side_to_move()];
 
-    // Quiet best move: update killers, history and countermoves
-    else if (bestMove && !pos.capture_or_promotion(bestMove))
-        update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount);
-
-    // Bonus for prior countermove that caused the fail low
-    else if (    depth >= 3 * ONE_PLY
-             && !bestMove
-             && !pos.captured_piece_type()
-             && is_ok((ss-1)->currentMove))
-    {
-        Square prevSq = to_sq((ss-1)->currentMove);
-        Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + 2 * depth / ONE_PLY - 2);
-        if ((ss-2)->counterMoves)
-            (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
-
-        if ((ss-3)->counterMoves)
-            (ss-3)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
-
-        if ((ss-5)->counterMoves)
-            (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
-    }
+    // Update killers, history and countermoves
+    else
+        update_stats(pos, ss, bestMove, !bestMove, depth, quietsSearched, quietCount);
 
     tte->save(posKey, value_to_tt(bestValue, ss->ply),
               bestValue >= beta ? BOUND_LOWER :
@@ -1377,57 +1358,60 @@ moves_loop: // When in check search starts from here
   }
 
 
-  // update_stats() updates killers, history, countermove and countermove plus
-  // follow-up move history when a new quiet best move is found.
-
-  void update_stats(const Position& pos, Stack* ss, Move move,
+  // update_stats() updates killers, history, countermove, countermove history,
+  // and follow-up move history.
+  void update_stats(const Position& pos, Stack* ss, Move move, bool failLow,
                     Depth depth, Move* quiets, int quietsCnt) {
 
-    if (ss->killers[0] != move)
-    {
-        ss->killers[1] = ss->killers[0];
-        ss->killers[0] = move;
-    }
-
     Value bonus = Value((depth / ONE_PLY) * (depth / ONE_PLY) + 2 * depth / ONE_PLY - 2);
-
     Square prevSq = to_sq((ss-1)->currentMove);
-    CounterMoveStats* cmh  = (ss-1)->counterMoves;
-    CounterMoveStats* fmh  = (ss-2)->counterMoves;
-    CounterMoveStats* fmh2 = (ss-4)->counterMoves;
-    Thread* thisThread = pos.this_thread();
 
-    thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
-
-    if (cmh)
+    // Update stats for current best quiet move.
+    if (!failLow && move && !pos.capture_or_promotion(move))
     {
-        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
-        cmh->update(pos.moved_piece(move), to_sq(move), bonus);
-    }
+        if (ss->killers[0] != move)
+        {
+            ss->killers[1] = ss->killers[0];
+            ss->killers[0] = move;
+        }
 
-    if (fmh)
-        fmh->update(pos.moved_piece(move), to_sq(move), bonus);
+        CounterMoveStats* cmh  = (ss-1)->counterMoves;
+        CounterMoveStats* fmh  = (ss-2)->counterMoves;
+        CounterMoveStats* fmh2 = (ss-4)->counterMoves;
+        Thread* thisThread = pos.this_thread();
 
-    if (fmh2)
-        fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
-
-    // Decrease all the other played quiet moves
-    for (int i = 0; i < quietsCnt; ++i)
-    {
-        thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        thisThread->history.update(pos.moved_piece(move), to_sq(move), bonus);
 
         if (cmh)
-            cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        {
+            thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
+            cmh->update(pos.moved_piece(move), to_sq(move), bonus);
+        }
 
         if (fmh)
-            fmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+            fmh->update(pos.moved_piece(move), to_sq(move), bonus);
 
         if (fmh2)
-            fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+            fmh2->update(pos.moved_piece(move), to_sq(move), bonus);
+
+        // Decrease all the other played quiet moves.
+        for (int i = 0; i < quietsCnt; ++i)
+        {
+            thisThread->history.update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+
+            if (cmh)
+                cmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+
+            if (fmh)
+                fmh->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+
+            if (fmh2)
+                fmh2->update(pos.moved_piece(quiets[i]), to_sq(quiets[i]), -bonus);
+        }
     }
 
-    // Extra penalty for a quiet TT move in previous ply when it gets refuted
-    if ((ss-1)->moveCount == 1 && !pos.captured_piece_type())
+    // Extra penalty for a quiet TT move in previous ply when it gets refuted.
+    if (!failLow && (ss-1)->moveCount == 1 && !pos.captured_piece_type())
     {
         if ((ss-2)->counterMoves)
             (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
@@ -1437,6 +1421,22 @@ moves_loop: // When in check search starts from here
 
         if ((ss-5)->counterMoves)
             (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, -bonus - 2 * (depth + 1) / ONE_PLY - 1);
+    }
+
+    // Bonus for prior countermove that caused the fail low.
+    else if (   failLow
+             && depth >= 3 * ONE_PLY
+             && !pos.captured_piece_type()
+             && is_ok((ss-1)->currentMove))
+    {
+        if ((ss-2)->counterMoves)
+            (ss-2)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
+
+        if ((ss-3)->counterMoves)
+            (ss-3)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
+
+        if ((ss-5)->counterMoves)
+            (ss-5)->counterMoves->update(pos.piece_on(prevSq), prevSq, bonus);
     }
   }
 
