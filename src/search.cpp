@@ -762,6 +762,7 @@ namespace {
             ss->skipEarlyPruning = true;
             Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
                                         :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
+            (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
             ss->skipEarlyPruning = false;
 
             if (v >= beta)
@@ -808,6 +809,7 @@ namespace {
         Depth d = depth - 2 * ONE_PLY - (PvNode ? DEPTH_ZERO : depth / 4);
         ss->skipEarlyPruning = true;
         search<NT>(pos, ss, alpha, beta, d, cutNode);
+        (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
         ss->skipEarlyPruning = false;
 
         tte = TT.probe(posKey, ttHit);
@@ -893,6 +895,7 @@ moves_loop: // When in check search starts from here
           ss->excludedMove = move;
           ss->skipEarlyPruning = true;
           value = search<NonPV>(pos, ss, rBeta - 1, rBeta, depth / 2, cutNode);
+          (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
           ss->skipEarlyPruning = false;
           ss->excludedMove = MOVE_NONE;
 
