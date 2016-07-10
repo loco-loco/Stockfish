@@ -964,8 +964,8 @@ moves_loop: // When in check search starts from here
                      +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO);
 
           // Increase reduction for cut nodes
-          if (cutNode)
-              r += (move != ss->killers[0]) * 2 * ONE_PLY;
+          if (cutNode && move != ss->killers[0])
+              r += 2 * ONE_PLY;
 
           // Decrease reduction for moves that escape a capture. Filter out
           // castling moves, because they are coded as "king captures rook" and
