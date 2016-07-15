@@ -806,12 +806,21 @@ namespace {
         && (PvNode || ss->staticEval + 256 >= beta))
     {
         Depth d = depth - 2 * ONE_PLY - (PvNode ? DEPTH_ZERO : depth / 4);
-        ss->skipEarlyPruning = true;
-        search<NT>(pos, ss, alpha, beta, d, cutNode);
-        ss->skipEarlyPruning = false;
+        bool ttFailLow =  ttHit
+                        && tte->depth() >= d
+                     /* && ttValue != VALUE_NONE // Already implicit in the next condition */
+                        && ttValue <= alpha
+                        && (tte->bound() & BOUND_UPPER);
 
-        tte = TT.probe(posKey, ttHit);
-        ttMove = ttHit ? tte->move() : MOVE_NONE;
+        if (!ttFailLow)
+        {
+            ss->skipEarlyPruning = true;
+            search<NT>(pos, ss, alpha, beta, d, cutNode);
+            ss->skipEarlyPruning = false;
+
+            tte = TT.probe(posKey, ttHit);
+            ttMove = ttHit ? tte->move() : MOVE_NONE;
+        }
     }
 
 moves_loop: // When in check search starts from here
