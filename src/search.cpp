@@ -801,7 +801,7 @@ namespace {
 
     // Step 10. Internal iterative deepening (skipped when in check)
     if (    depth >= (PvNode ? 5 * ONE_PLY : 8 * ONE_PLY)
-        && !ttMove
+        && (!ttMove || tte->depth() < depth - 2 * ONE_PLY - depth / 4)
         && (PvNode || ss->staticEval + 256 >= beta))
     {
         Depth d = depth - 2 * ONE_PLY - (PvNode ? DEPTH_ZERO : depth / 4);
@@ -810,6 +810,7 @@ namespace {
         ss->skipEarlyPruning = false;
 
         tte = TT.probe(posKey, ttHit);
+        ttValue = ttHit ? value_from_tt(tte->value(), ss->ply) : VALUE_NONE;
         ttMove = ttHit ? tte->move() : MOVE_NONE;
     }
 
