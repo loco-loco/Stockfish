@@ -1109,7 +1109,9 @@ moves_loop: // When in check search starts from here
 
     // Quiet best move: update killers, history and countermoves
     else if (bestMove && !pos.capture_or_promotion(bestMove))
-        update_stats(pos, ss, bestMove, depth, quietsSearched, quietCount);
+        update_stats(pos, ss, bestMove,
+                     (ttMove && ttMove != bestMove ? depth + ONE_PLY : depth),
+                     quietsSearched, quietCount);
 
     // Bonus for prior countermove that caused the fail low
     else if (    depth >= 3 * ONE_PLY
