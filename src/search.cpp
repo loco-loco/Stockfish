@@ -801,9 +801,9 @@ namespace {
     }
 
     // Step 10. Internal iterative deepening (skipped when in check)
-    if (    depth >= 6 * ONE_PLY
+    if (    depth >= (5 + ttHit) * ONE_PLY
         && !ttMove
-        && (PvNode || ss->staticEval + 256 >= beta))
+        && (PvNode || !ttHit || ss->staticEval + 256 >= beta))
     {
         Depth d = 3 * depth / 4 - 2 * ONE_PLY;
         ss->skipEarlyPruning = true;
