@@ -801,12 +801,12 @@ namespace {
     }
 
     // Step 10. Internal iterative deepening (skipped when in check)
-    if (    depth >= 6 * ONE_PLY
+    if (    depth >= (ttHit ? 6 : 5) * ONE_PLY
         && !ttMove
         && (PvNode || ss->staticEval + 256 >= beta))
     {
         ss->skipEarlyPruning = true;
-        search<NT>(pos, ss, alpha, beta, 3 * depth / 4 - 2 * ONE_PLY, cutNode);
+        search<NT>(pos, ss, alpha, beta, (3 * depth + ONE_PLY) / 4 - 2 * ONE_PLY, cutNode);
         ss->skipEarlyPruning = false;
 
         tte = TT.probe(posKey, ttHit);
