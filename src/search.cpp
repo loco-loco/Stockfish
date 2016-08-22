@@ -800,20 +800,22 @@ namespace {
             }
     }
 
+moves_loop: // When in check search starts from here
+
     // Step 10. Internal iterative deepening (skipped when in check)
     if (    depth >= 6 * ONE_PLY
         && !ttMove
+        && (!ttHit || !ss->skipEarlyPruning)
         && (PvNode || ss->staticEval + 256 >= beta))
     {
+        bool oldSkip = ss->skipEarlyPruning;
         ss->skipEarlyPruning = true;
         search<NT>(pos, ss, alpha, beta, 3 * depth / 4 - 2 * ONE_PLY, cutNode);
-        ss->skipEarlyPruning = false;
+        ss->skipEarlyPruning = oldSkip;
 
         tte = TT.probe(posKey, ttHit);
         ttMove = ttHit ? tte->move() : MOVE_NONE;
     }
-
-moves_loop: // When in check search starts from here
 
     const CounterMoveStats* cmh  = (ss-1)->counterMoves;
     const CounterMoveStats* fmh  = (ss-2)->counterMoves;
@@ -890,9 +892,10 @@ moves_loop: // When in check search starts from here
       {
           Value rBeta = ttValue - 2 * depth / ONE_PLY;
           ss->excludedMove = move;
+          bool oldSkip = ss->skipEarlyPruning;
           ss->skipEarlyPruning = true;
           value = search<NonPV>(pos, ss, rBeta - 1, rBeta, depth / 2, cutNode);
-          ss->skipEarlyPruning = false;
+          ss->skipEarlyPruning = oldSkip;
           ss->excludedMove = MOVE_NONE;
 
           if (value < rBeta)
