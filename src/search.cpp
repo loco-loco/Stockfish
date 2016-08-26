@@ -771,7 +771,16 @@ namespace {
                 nullValue = beta;
 
             if (depth < 12 * ONE_PLY && abs(beta) < VALUE_KNOWN_WIN)
+            {
+                // Extra penalty for a quiet TT move in previous ply when it gets refuted
+                if ((ss-1)->moveCount == 1 && !pos.captured_piece_type() && depth-R >= ONE_PLY)
+                {
+                    int d = (depth-R) / ONE_PLY;
+                    Value penalty = Value(d * d + 4 * d + 1);
+                    update_opponent_stats(pos, ss, -penalty);
+                }
                 return nullValue;
+            }
 
             // Do verification search at high depths
             ss->skipEarlyPruning = true;
@@ -811,7 +820,16 @@ namespace {
                 value = -search<NonPV>(pos, ss+1, -rbeta, -rbeta+1, rdepth, !cutNode);
                 pos.undo_move(move);
                 if (value >= rbeta)
+                {
+                    // Extra penalty for a quiet TT move in previous ply when it gets refuted
+                    if ((ss-1)->moveCount == 1 && !pos.captured_piece_type())
+                    {
+                        int d = rdepth / ONE_PLY;
+                        Value penalty = Value(d * d + 4 * d + 1);
+                        update_opponent_stats(pos, ss, -penalty);
+                    }
                     return value;
+                }
             }
     }
 
