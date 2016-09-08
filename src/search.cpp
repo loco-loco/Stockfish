@@ -1200,6 +1200,7 @@ moves_loop: // When in check search starts from here
 
     ss->currentMove = bestMove = MOVE_NONE;
     ss->ply = (ss-1)->ply + 1;
+    ss->moveCount = 0;
 
     // Check for an instant draw or if the maximum ply has been reached
     if (pos.is_draw() || ss->ply >= MAX_PLY)
@@ -1228,6 +1229,14 @@ moves_loop: // When in check search starts from here
                             : (tte->bound() &  BOUND_UPPER)))
     {
         ss->currentMove = ttMove; // Can be MOVE_NONE
+
+        // Extra penalty for a quiet TT move in previous ply when it gets refuted
+        if (ttValue >= beta && (ss-1)->moveCount == 1 && !pos.captured_piece())
+        {
+            Value penalty = Value(1);
+            Square prevSq = to_sq((ss-1)->currentMove);
+            update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -penalty);
+        }
         return ttValue;
     }
 
@@ -1354,6 +1363,14 @@ moves_loop: // When in check search starts from here
               }
               else // Fail high
               {
+                  // Extra penalty for a quiet TT move in previous ply when it gets refuted
+                  if ((ss-1)->moveCount == 1 && !pos.captured_piece())
+                  {
+                      Value penalty = Value(1);
+                      Square prevSq = to_sq((ss-1)->currentMove);
+                      update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -penalty);
+                  }
+
                   tte->save(posKey, value_to_tt(value, ss->ply), BOUND_LOWER,
                             ttDepth, move, ss->staticEval, TT.generation());
 
