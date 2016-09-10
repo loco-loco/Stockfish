@@ -1111,6 +1111,10 @@ moves_loop: // When in check search starts from here
                   break;
               }
           }
+
+          // Extra penalty for a quiet TT move when it gets refuted in qsearch()
+          else if (newDepth < ONE_PLY && moveCount == 1 && !captureOrPromotion)
+              update_cm_stats(ss, moved_piece, to_sq(move), -Value(1));
       }
 
       if (!captureOrPromotion && move != bestMove && quietCount < 64)
