@@ -648,14 +648,6 @@ namespace {
                 Value bonus = Value(d * d + 2 * d - 2);
                 update_stats(pos, ss, ttMove, nullptr, 0, bonus);
             }
-
-            // Extra penalty for a quiet TT move in previous ply when it gets refuted
-            if ((ss-1)->moveCount == 1 && !pos.captured_piece())
-            {
-                Value penalty = Value(d * d + 4 * d + 1);
-                Square prevSq = to_sq((ss-1)->currentMove);
-                update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -penalty);
-            }
         }
         return ttValue;
     }
@@ -1010,7 +1002,7 @@ moves_loop: // When in check search starts from here
                          +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                          +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
                          +    thisThread->fromTo.get(~pos.side_to_move(), move);
-              int rHist = (val - 8000) / 20000;
+              int rHist = (val - 4000) / 20000;
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - rHist) * ONE_PLY);
           }
 
@@ -1114,7 +1106,16 @@ moves_loop: // When in check search starts from here
       }
 
       if (!captureOrPromotion && move != bestMove && quietCount < 64)
+      {
+          // Extra penalty for first quiet move when it gets refuted
+          if (depth > ONE_PLY && quietCount == 0)
+          {
+              int d = depth / ONE_PLY;
+              Value penalty = Value(d * d + 2 * d - 2);
+              update_cm_stats(ss, moved_piece, to_sq(move), -penalty);
+          }
           quietsSearched[quietCount++] = move;
+      }
     }
 
     // The following condition would detect a stop only after move loop has been
@@ -1141,14 +1142,6 @@ moves_loop: // When in check search starts from here
         {
             Value bonus = Value(d * d + 2 * d - 2);
             update_stats(pos, ss, bestMove, quietsSearched, quietCount, bonus);
-        }
-
-        // Extra penalty for a quiet TT move in previous ply when it gets refuted
-        if ((ss-1)->moveCount == 1 && !pos.captured_piece())
-        {
-            Value penalty = Value(d * d + 4 * d + 1);
-            Square prevSq = to_sq((ss-1)->currentMove);
-            update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, -penalty);
         }
     }
     // Bonus for prior countermove that caused the fail low
