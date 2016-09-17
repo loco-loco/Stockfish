@@ -866,7 +866,7 @@ moves_loop: // When in check search starts from here
                                   thisThread->rootMoves.end(), move))
           continue;
 
-      ss->moveCount = ++moveCount;
+      ++moveCount;
 
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
           sync_cout << "info depth " << depth / ONE_PLY
@@ -962,10 +962,11 @@ moves_loop: // When in check search starts from here
       // Check for legality just before making the move
       if (!rootNode && !pos.legal(move))
       {
-          ss->moveCount = --moveCount;
+          --moveCount;
           continue;
       }
 
+      ss->moveCount = moveCount;
       ss->currentMove = move;
       ss->counterMoves = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
 
