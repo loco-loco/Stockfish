@@ -900,8 +900,7 @@ moves_loop: // When in check search starts from here
       // ttValue minus a margin then we extend the ttMove.
       if (    singularExtensionNode
           &&  move == ttMove
-          && !extension
-          &&  pos.legal(move))
+          && !extension)
       {
           Value rBeta = ttValue - 2 * depth / ONE_PLY;
           Depth d = (depth / (2 * ONE_PLY)) * ONE_PLY;
@@ -910,6 +909,7 @@ moves_loop: // When in check search starts from here
           value = search<NonPV>(pos, ss, rBeta - 1, rBeta, d, cutNode);
           ss->skipEarlyPruning = false;
           ss->excludedMove = MOVE_NONE;
+          ss->moveCount = 0;
 
           if (value < rBeta)
               extension = ONE_PLY;
