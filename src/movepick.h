@@ -75,7 +75,7 @@ struct FromToStats {
     Square from = from_sq(m);
     Square to = to_sq(m);
 
-    table[c][from][to] -= table[c][from][to] * abs(int(v)) / 324;
+    table[c][from][to] -= table[c][from][to] * abs(int(v)) / 512;
     table[c][from][to] += int(v) * 32;
   }
 
