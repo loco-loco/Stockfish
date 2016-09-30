@@ -560,7 +560,7 @@ namespace {
     TTEntry* tte;
     Key posKey;
     Move ttMove, move, excludedMove, bestMove;
-    Depth extension, newDepth;
+    Depth extension, newDepth, reducedDepth;
     Value bestValue, value, ttValue, eval, nullValue;
     bool ttHit, inCheck, givesCheck, singularExtensionNode, improving;
     bool captureOrPromotion, doFullDepthSearch, moveCountPruning;
@@ -973,6 +973,7 @@ moves_loop: // When in check search starts from here
 
       // Step 15. Reduced depth search (LMR). If the move fails high it will be
       // re-searched at full depth.
+      reducedDepth = DEPTH_ZERO;
       if (    depth >= 3 * ONE_PLY
           &&  moveCount > 1
           && (!captureOrPromotion || moveCountPruning))
@@ -1006,21 +1007,27 @@ moves_loop: // When in check search starts from here
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - rHist) * ONE_PLY);
           }
 
-          Depth d = std::max(newDepth - r, ONE_PLY);
+          reducedDepth = std::max(newDepth - r, ONE_PLY);
 
-          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
+          value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, reducedDepth, true);
 
-          doFullDepthSearch = (value > alpha && d != newDepth);
+          doFullDepthSearch = (value > alpha && reducedDepth != newDepth);
       }
       else
           doFullDepthSearch = !PvNode || moveCount > 1;
 
       // Step 16. Full depth search when LMR is skipped or fails high
       if (doFullDepthSearch)
+      {
           value = newDepth <   ONE_PLY ?
                             givesCheck ? -qsearch<NonPV,  true>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
                                        : -qsearch<NonPV, false>(pos, ss+1, -(alpha+1), -alpha, DEPTH_ZERO)
                                        : - search<NonPV>(pos, ss+1, -(alpha+1), -alpha, newDepth, !cutNode);
+
+          // Extra penalty for refuted quiet move that pass LMR.
+          if (reducedDepth && value < alpha && !captureOrPromotion && quietCount < 64)
+              quietsSearched[quietCount++] = move;
+      }
 
       // For PV nodes only, do a full PV search on the first move or after a fail
       // high (in the latter case search only if value < beta), otherwise let the
