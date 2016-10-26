@@ -778,6 +778,7 @@ namespace {
             Value v = depth-R < ONE_PLY ? qsearch<NonPV, false>(pos, ss, beta-1, beta, DEPTH_ZERO)
                                         :  search<NonPV>(pos, ss, beta-1, beta, depth-R, false);
             ss->skipEarlyPruning = false;
+            ss->history = VALUE_ZERO;
 
             if (v >= beta)
                 return nullValue;
@@ -822,6 +823,7 @@ namespace {
         ss->skipEarlyPruning = true;
         search<NT>(pos, ss, alpha, beta, d, cutNode);
         ss->skipEarlyPruning = false;
+        ss->history = VALUE_ZERO;
 
         tte = TT.probe(posKey, ttHit);
         ttMove = ttHit ? tte->move() : MOVE_NONE;
@@ -907,6 +909,7 @@ moves_loop: // When in check search starts from here
           value = search<NonPV>(pos, ss, rBeta - 1, rBeta, d, cutNode);
           ss->skipEarlyPruning = false;
           ss->excludedMove = MOVE_NONE;
+          ss->history = VALUE_ZERO;
 
           if (value < rBeta)
               extension = ONE_PLY;
