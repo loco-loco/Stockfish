@@ -1016,7 +1016,7 @@ moves_loop: // When in check search starts from here
           doFullDepthSearch = (value > alpha && d != newDepth);
           
           if (doFullDepthSearch && !captureOrPromotion && newDepth <= 17 * ONE_PLY)
-          {
+          { 
               Value penalty = Value(int(d) * int(d) + 2 * int(d) - 2);
               update_cm_stats(ss, moved_piece, to_sq(move), -penalty);
           }
