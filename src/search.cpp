@@ -1014,6 +1014,12 @@ moves_loop: // When in check search starts from here
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
           doFullDepthSearch = (value > alpha && d != newDepth);
+          
+          if (doFullDepthSearch && !captureOrPromotion && newDepth <= 17 * ONE_PLY)
+          {
+              Value penalty = Value(int(d) * int(d) + 2 * int(d) - 2);
+              update_cm_stats(ss, moved_piece, to_sq(move), -penalty);
+          }
       }
       else
           doFullDepthSearch = !PvNode || moveCount > 1;
