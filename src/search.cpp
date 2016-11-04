@@ -1154,7 +1154,7 @@ moves_loop: // When in check search starts from here
              && !pos.captured_piece()
              && is_ok((ss-1)->currentMove))
     {
-        int d = depth / ONE_PLY;
+        int d = depth / ONE_PLY - cutNode;
         Value bonus = Value(d * d + 2 * d - 2);
         Square prevSq = to_sq((ss-1)->currentMove);
         update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, bonus);
