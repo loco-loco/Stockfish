@@ -962,6 +962,8 @@ moves_loop: // When in check search starts from here
 
       ss->currentMove = move;
       ss->counterMoves = &thisThread->counterMoveHistory[moved_piece][to_sq(move)];
+      if (depth >= 3 * ONE_PLY)
+          ss->history = moveCount > 1 ? VALUE_ZERO : Value(1);
 
       // Step 14. Make the move
       pos.do_move(move, st, givesCheck);
@@ -995,8 +997,7 @@ moves_loop: // When in check search starts from here
                            +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
-                           +    thisThread->fromTo.get(~pos.side_to_move(), move)
-                           -    8000; // Correction factor
+                           +    thisThread->fromTo.get(~pos.side_to_move(), move);
 
               // Decrease/increase reduction by comparing opponent's stat score
               if (ss->history > VALUE_ZERO && (ss-1)->history < VALUE_ZERO)
