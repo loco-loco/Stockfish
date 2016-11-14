@@ -998,11 +998,15 @@ moves_loop: // When in check search starts from here
                            -    8000; // Correction factor
 
               // Decrease/increase reduction by comparing opponent's stat score
-              if (ss->history > VALUE_ZERO && (ss-1)->history < VALUE_ZERO)
-                  r -= ONE_PLY;
+              if((ss-1)->history)
+              {
+                  Value delta_stat =  (ss-1)->history - (ss-2)->history;
+                  if (ss->history > VALUE_ZERO && delta_stat < VALUE_ZERO)
+                      r -= ONE_PLY;
 
-              else if (ss->history < VALUE_ZERO && (ss-1)->history > VALUE_ZERO)
-                  r += ONE_PLY;
+                  else if (ss->history < VALUE_ZERO && delta_stat > VALUE_ZERO)
+                      r += ONE_PLY;
+              }
 
               // Decrease/increase reduction for moves with a good/bad history
               r = std::max(DEPTH_ZERO, (r / ONE_PLY - ss->history / 20000) * ONE_PLY);
