@@ -68,7 +68,7 @@ namespace {
   Value futility_margin(Depth d) { return Value(150 * d / ONE_PLY); }
 
   // Futility and reductions lookup tables, initialized at startup
-  int FutilityMoveCounts[2][16]; // [improving][depth]
+  int FutilityMoveCounts[2][2][16]; // [cutNode][improving][depth]
   int Reductions[2][2][64][64];  // [pv][improving][depth][moveNumber]
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
@@ -192,11 +192,12 @@ void Search::init() {
                 Reductions[NonPV][imp][d][mc]++;
           }
 
-  for (int d = 0; d < 16; ++d)
-  {
-      FutilityMoveCounts[0][d] = int(2.4 + 0.773 * pow(d + 0.00, 1.8));
-      FutilityMoveCounts[1][d] = int(2.9 + 1.045 * pow(d + 0.49, 1.8));
-  }
+  for (int cutNode = 0; cutNode < 2; cutNode++)
+      for (int d = 0; d < 16; ++d)
+      {
+          FutilityMoveCounts[cutNode][0][d] = int(2.4 + (cutNode ? -0.2 : 0.2) + 0.773 * pow(d + 0.00 + (cutNode ? -0.2 : 0.2) , 1.8));
+          FutilityMoveCounts[cutNode][1][d] = int(2.9 + (cutNode ? -0.2 : 0.2) + 1.045 * pow(d + 0.49 + (cutNode ? -0.2 : 0.2) , 1.8));
+      }
 }
 
 
@@ -878,7 +879,7 @@ moves_loop: // When in check search starts from here
                   : pos.gives_check(move);
 
       moveCountPruning =   depth < 16 * ONE_PLY
-                        && moveCount >= FutilityMoveCounts[improving][depth / ONE_PLY];
+                        && moveCount >= FutilityMoveCounts[cutNode][improving][depth / ONE_PLY];
 
       // Step 12. Extend checks
       if (    givesCheck
