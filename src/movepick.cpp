@@ -143,7 +143,7 @@ void MovePicker::score<QUIETS>() {
   const HistoryStats& history = pos.this_thread()->history;
   const FromToStats& fromTo = pos.this_thread()->fromTo;
 
-  const CounterMoveStats* cm = (ss-1)->counterMoves;
+  const CounterMoveStats* cm = (ss-1)->counterMoves ? (ss-1)->counterMoves : (ss-3)->counterMoves;
   const CounterMoveStats* fm = (ss-2)->counterMoves;
   const CounterMoveStats* f2 = (ss-4)->counterMoves;
 
