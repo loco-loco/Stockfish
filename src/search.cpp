@@ -335,12 +335,12 @@ void MainThread::search() {
 
 void Thread::search() {
 
-  Stack stack[MAX_PLY+7], *ss = stack+4; // To allow referencing (ss-4) and (ss+2)
+  Stack stack[MAX_PLY+9], *ss = stack+6; // To allow referencing (ss-6) and (ss+2)
   Value bestValue, alpha, beta, delta;
   Move easyMove = MOVE_NONE;
   MainThread* mainThread = (this == Threads.main() ? Threads.main() : nullptr);
 
-  std::memset(ss-4, 0, 7 * sizeof(Stack));
+  std::memset(stack, 0, 9 * sizeof(Stack));
 
   bestValue = delta = alpha = -VALUE_INFINITE;
   beta = VALUE_INFINITE;
@@ -1427,8 +1427,8 @@ moves_loop: // When in check search starts from here
   void update_cm_stats(Stack* ss, Piece pc, Square s, Value bonus) {
 
     CounterMoveStats* cmh  = (ss-1)->counterMoves;
-    CounterMoveStats* fmh1 = (ss-2)->counterMoves;
-    CounterMoveStats* fmh2 = (ss-4)->counterMoves;
+    CounterMoveStats* fmh1 = (ss-2)->counterMoves ? (ss-2)->counterMoves : (ss-6)->counterMoves;
+    CounterMoveStats* fmh2 = (ss-4)->counterMoves ? (ss-4)->counterMoves : (ss-6)->counterMoves;
 
     if (cmh)
         cmh->update(pc, s, bonus);

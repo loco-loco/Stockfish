@@ -144,8 +144,8 @@ void MovePicker::score<QUIETS>() {
   const FromToStats& fromTo = pos.this_thread()->fromTo;
 
   const CounterMoveStats* cm = (ss-1)->counterMoves;
-  const CounterMoveStats* fm = (ss-2)->counterMoves;
-  const CounterMoveStats* f2 = (ss-4)->counterMoves;
+  const CounterMoveStats* fm = (ss-2)->counterMoves ? (ss-2)->counterMoves : (ss-6)->counterMoves;
+  const CounterMoveStats* f2 = (ss-4)->counterMoves ? (ss-4)->counterMoves : (ss-6)->counterMoves;
 
   Color c = pos.side_to_move();
 
