@@ -986,7 +986,7 @@ moves_loop: // When in check search starts from here
                            +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
                            +    thisThread->fromTo.get(~pos.side_to_move(), move)
-                           -    8500; // Correction factor
+                           -    8800; // Correction factor
 
               // Decrease/increase reduction by comparing opponent's stat score
               if (ss->history > VALUE_ZERO && (ss-1)->history < VALUE_ZERO)
@@ -1129,7 +1129,7 @@ moves_loop: // When in check search starts from here
             update_stats(pos, ss, bestMove, quietsSearched, quietCount, bonus(depth));
             if (ttMove && bestMove != ttMove)
                 update_cm_stats(ss, pos.piece_on(from_sq(bestMove)),
-                                to_sq(bestMove), bonus(depth) / 2);
+                                to_sq(bestMove), (bonus(depth) + 1)/ 2);
         }
 
         // Extra penalty for a quiet TT move in previous ply when it gets refuted
