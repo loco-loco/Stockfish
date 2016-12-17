@@ -981,22 +981,28 @@ moves_loop: // When in check search starts from here
                        && !pos.see_ge(make_move(to_sq(move), from_sq(move)),  VALUE_ZERO))
                   r -= 2 * ONE_PLY;
 
-              ss->history = thisThread->history[moved_piece][to_sq(move)]
+              Value val   = thisThread->history[moved_piece][to_sq(move)]
                            +    (cmh  ? (*cmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            +    (fmh  ? (*fmh )[moved_piece][to_sq(move)] : VALUE_ZERO)
                            +    (fmh2 ? (*fmh2)[moved_piece][to_sq(move)] : VALUE_ZERO)
                            +    thisThread->fromTo.get(~pos.side_to_move(), move)
                            -    8000; // Correction factor
 
+              // Extra bonus for improving score
+              if (ss->history && (val - ss->history) > VALUE_ZERO)
+                  val += (val - ss->history) / 4;
+
               // Decrease/increase reduction by comparing opponent's stat score
-              if (ss->history > VALUE_ZERO && (ss-1)->history < VALUE_ZERO)
+              if (val > VALUE_ZERO && (ss-1)->history < VALUE_ZERO)
                   r -= ONE_PLY;
 
-              else if (ss->history < VALUE_ZERO && (ss-1)->history > VALUE_ZERO)
+              else if (val < VALUE_ZERO && (ss-1)->history > VALUE_ZERO)
                   r += ONE_PLY;
 
+              ss->history = val;
+
               // Decrease/increase reduction for moves with a good/bad history
-              r = std::max(DEPTH_ZERO, (r / ONE_PLY - ss->history / 20000) * ONE_PLY);
+              r = std::max(DEPTH_ZERO, (r / ONE_PLY - val / 20000) * ONE_PLY);
           }
 
           Depth d = std::max(newDepth - r, ONE_PLY);
