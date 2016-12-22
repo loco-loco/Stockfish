@@ -70,6 +70,7 @@ namespace {
   // Futility and reductions lookup tables, initialized at startup
   int FutilityMoveCounts[2][16]; // [improving][depth]
   int Reductions[2][2][64][64];  // [pv][improving][depth][moveNumber]
+  int Reductions2[2][64][64];  // [improving][depth][moveNumber]
 
   template <bool PvNode> Depth reduction(bool i, Depth d, int mn) {
     return Reductions[PvNode][i][std::min(d / ONE_PLY, 63)][std::min(mn, 63)] * ONE_PLY;
@@ -188,6 +189,7 @@ void Search::init() {
               double r = log(d) * log(mc) / 2;
 
               Reductions[NonPV][imp][d][mc] = int(std::round(r));
+              Reductions2[imp][d][mc] = int(20000 * (std::round(r) - r));
               Reductions[PV][imp][d][mc] = std::max(Reductions[NonPV][imp][d][mc] - 1, 0);
 
               // Increase reduction for non-PV nodes when eval is not improving
@@ -994,7 +996,8 @@ moves_loop: // When in check search starts from here
                   r += ONE_PLY;
 
               // Decrease/increase reduction for moves with a good/bad history
-              r = std::max(DEPTH_ZERO, (r / ONE_PLY - ss->history / 20000) * ONE_PLY);
+              int residual = Reductions2[improving][depth / ONE_PLY][moveCount];
+              r = std::max(DEPTH_ZERO, (r / ONE_PLY - (ss->history + residual)/ 20000) * ONE_PLY);
           }
 
           Depth d = std::max(newDepth - r, ONE_PLY);
