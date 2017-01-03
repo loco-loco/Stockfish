@@ -635,16 +635,17 @@ namespace {
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->PVIdx].pv[0]
             : ttHit    ? tte->move() : MOVE_NONE;
 
-    // At non-PV nodes we check for an early TT cutoff
-    if (  !PvNode
+    // Check for an early TT cutoff
+    if (   !rootNode
         && ttHit
         && tte->depth() >= depth
         && ttValue != VALUE_NONE // Possible in case of TT access race
-        && (ttValue >= beta ? (tte->bound() & BOUND_LOWER)
-                            : (tte->bound() & BOUND_UPPER)))
+        && (PvNode ? tte->bound() == BOUND_EXACT
+                   : (ttValue > alpha ? (tte->bound() & BOUND_LOWER)
+                                      : (tte->bound() & BOUND_UPPER))))
     {
         // If ttMove is quiet, update killers, history, counter move on TT hit
-        if (ttValue >= beta && ttMove)
+        if (ttValue > alpha && ttMove)
         {
             if (!pos.capture_or_promotion(ttMove))
                 update_stats(pos, ss, ttMove, nullptr, 0, bonus(depth));
