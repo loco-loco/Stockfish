@@ -900,7 +900,12 @@ moves_loop: // When in check search starts from here
           ss->excludedMove = MOVE_NONE;
 
           if (value < rBeta)
+          {
               extension = ONE_PLY;
+              if (!pos.captured_piece() && is_ok((ss-1)->currentMove))
+                  update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, bonus(d));
+         }
+
       }
 
       // Update the current move (this must be done after singular extension search)
@@ -1129,6 +1134,7 @@ moves_loop: // When in check search starts from here
     }
     // Bonus for prior countermove that caused the fail low
     else if (    depth >= 3 * ONE_PLY
+             && !excludedMove
              && !pos.captured_piece()
              && is_ok((ss-1)->currentMove))
         update_cm_stats(ss-1, pos.piece_on(prevSq), prevSq, bonus(depth));
