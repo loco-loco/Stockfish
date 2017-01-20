@@ -879,6 +879,7 @@ moves_loop: // When in check search starts from here
       // Extend checks
       if (    givesCheck
           && !moveCountPruning
+          && !excludedMove
           &&  pos.see_ge(move, VALUE_ZERO))
           extension = ONE_PLY;
 
@@ -892,7 +893,7 @@ moves_loop: // When in check search starts from here
           && !extension
           &&  pos.legal(move))
       {
-          Value rBeta = std::max(ttValue - 2 * depth / ONE_PLY, -VALUE_MATE);
+          Value rBeta = std::max(ttValue - (2 - givesCheck) * depth / ONE_PLY, -VALUE_MATE);
           Depth d = (depth / (2 * ONE_PLY)) * ONE_PLY;
           ss->excludedMove = move;
           value = search<NonPV>(pos, ss, rBeta - 1, rBeta, d, cutNode, true);
