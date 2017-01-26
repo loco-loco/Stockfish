@@ -835,6 +835,7 @@ moves_loop: // When in check search starts from here
                            &&  ttMove != MOVE_NONE
                            &&  ttValue != VALUE_NONE
                            && !excludedMove // Recursive singular search is not allowed
+                           && (!inCheck || depth >= 10 * ONE_PLY)
                            && (tte->bound() & BOUND_LOWER)
                            &&  tte->depth() >= depth - 3 * ONE_PLY;
 
