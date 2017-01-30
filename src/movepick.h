@@ -31,12 +31,14 @@
 
 /// HistoryStats records how often quiet moves have been successful or unsuccessful
 /// during the current search, and is used for reduction and move ordering decisions.
-struct HistoryStats {
+template<typename T>
+struct FromToStats {
 
   static const Value Max = Value(1 << 28);
 
-  Value get(Color c, Move m) const { return table[c][from_sq(m)][to_sq(m)]; }
+  T get(Color c, Move m) const { return table[c][from_sq(m)][to_sq(m)]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
+  void update(Color c, Move prevMove, Move m) { table[c][from_sq(prevMove)][to_sq(prevMove)] = m; }
   void update(Color c, Move m, Value v) {
 
     if (abs(int(v)) >= 324)
@@ -50,7 +52,7 @@ struct HistoryStats {
   }
 
 private:
-  Value table[COLOR_NB][SQUARE_NB][SQUARE_NB];
+  T table[COLOR_NB][SQUARE_NB][SQUARE_NB];
 };
 
 
@@ -65,7 +67,6 @@ struct Stats {
   const T* operator[](Piece pc) const { return table[pc]; }
   T* operator[](Piece pc) { return table[pc]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
-  void update(Piece pc, Square to, Move m) { table[pc][to] = m; }
   void update(Piece pc, Square to, Value v) {
 
     if (abs(int(v)) >= 324)
@@ -79,7 +80,8 @@ private:
   T table[PIECE_NB][SQUARE_NB];
 };
 
-typedef Stats<Move> MoveStats;
+typedef FromToStats<Value> HistoryStats;
+typedef FromToStats<Move> MoveStats;
 typedef Stats<Value> CounterMoveStats;
 typedef Stats<CounterMoveStats> CounterMoveHistoryStats;
 

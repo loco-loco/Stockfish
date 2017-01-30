@@ -1434,10 +1434,7 @@ moves_loop: // When in check search starts from here
     update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
 
     if ((ss-1)->counterMoves)
-    {
-        Square prevSq = to_sq((ss-1)->currentMove);
-        thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
-    }
+        thisThread->counterMoves.update(c, (ss-1)->currentMove, move);
 
     // Decrease all the other played quiet moves
     for (int i = 0; i < quietsCnt; ++i)
