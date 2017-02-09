@@ -1407,13 +1407,13 @@ moves_loop: // When in check search starts from here
     CounterMoveStats* fmh2 = (ss-4)->counterMoves;
 
     if (cmh)
-        cmh->update(pc, s, bonus);
+        cmh->update_cm(pc, s, bonus);
 
     if (fmh1)
-        fmh1->update(pc, s, bonus);
+        fmh1->update_fm(pc, s, bonus);
 
     if (fmh2)
-        fmh2->update(pc, s, bonus);
+        fmh2->update_fm(pc, s, bonus);
   }
 
 

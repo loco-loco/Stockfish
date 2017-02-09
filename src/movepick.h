@@ -66,12 +66,20 @@ struct Stats {
   T* operator[](Piece pc) { return table[pc]; }
   void clear() { std::memset(table, 0, sizeof(table)); }
   void update(Piece pc, Square to, Move m) { table[pc][to] = m; }
-  void update(Piece pc, Square to, Value v) {
+  void update_fm(Piece pc, Square to, Value v) {
 
     if (abs(int(v)) >= 324)
         return;
 
-    table[pc][to] -= table[pc][to] * abs(int(v)) / 936;
+    table[pc][to] -= table[pc][to] * abs(int(v)) / 1024;
+    table[pc][to] += int(v) * 32;
+  }
+  void update_cm(Piece pc, Square to, Value v) {
+
+    if (abs(int(v)) >= 324)
+        return;
+
+    table[pc][to] -= table[pc][to] * abs(int(v)) / 768;
     table[pc][to] += int(v) * 32;
   }
 
