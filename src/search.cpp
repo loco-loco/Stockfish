@@ -413,6 +413,8 @@ void Thread::search() {
           // high/low anymore.
           while (true)
           {
+              (ss-2)->counterMoves = ss->counterMoves;
+              (ss-1)->counterMoves = (ss+1)->counterMoves;
               bestValue = ::search<PV>(rootPos, ss, alpha, beta, rootDepth, false, false);
 
               // Bring the best move to the front. It is critical that sorting
@@ -1433,7 +1435,7 @@ moves_loop: // When in check search starts from here
     thisThread->history.update(c, move, bonus);
     update_cm_stats(ss, pos.moved_piece(move), to_sq(move), bonus);
 
-    if ((ss-1)->counterMoves)
+    if (is_ok((ss-1)->currentMove))
     {
         Square prevSq = to_sq((ss-1)->currentMove);
         thisThread->counterMoves.update(pos.piece_on(prevSq), prevSq, move);
