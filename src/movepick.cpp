@@ -26,7 +26,7 @@
 namespace {
 
   enum Stages {
-    MAIN_SEARCH, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, COUNTERMOVE, QUIET_INIT, QUIET, BAD_CAPTURES,
+    MAIN_SEARCH, CAPTURES_INIT, GOOD_CAPTURES, KILLERS, QUIET_INIT, QUIET, BAD_CAPTURES,
     EVASION, EVASIONS_INIT, ALL_EVASIONS,
     PROBCUT, PROBCUT_INIT, PROBCUT_CAPTURES,
     QSEARCH_WITH_CHECKS, QCAPTURES_1_INIT, QCAPTURES_1, QCHECKS,
@@ -70,9 +70,6 @@ MovePicker::MovePicker(const Position& p, Move ttm, Depth d, Search::Stack* s)
            : pos(p), ss(s), depth(d) {
 
   assert(d > DEPTH_ZERO);
-
-  Square prevSq = to_sq((ss-1)->currentMove);
-  countermove = pos.this_thread()->counterMoves[pos.piece_on(prevSq)][prevSq];
 
   stage = pos.checkers() ? EVASION : MAIN_SEARCH;
   ttMove = ttm && pos.pseudo_legal(ttm) ? ttm : MOVE_NONE;
@@ -223,17 +220,6 @@ Move MovePicker::next_move() {
           && !pos.capture(move))
           return move;
 
-  case COUNTERMOVE:
-      ++stage;
-      move = countermove;
-      if (    move != MOVE_NONE
-          &&  move != ttMove
-          &&  move != ss->killers[0]
-          &&  move != ss->killers[1]
-          &&  pos.pseudo_legal(move)
-          && !pos.capture(move))
-          return move;
-
   case QUIET_INIT:
       cur = endBadCaptures;
       endMoves = generate<QUIETS>(pos, cur);
@@ -253,8 +239,7 @@ Move MovePicker::next_move() {
           move = *cur++;
           if (   move != ttMove
               && move != ss->killers[0]
-              && move != ss->killers[1]
-              && move != countermove)
+              && move != ss->killers[1])
               return move;
       }
       ++stage;
