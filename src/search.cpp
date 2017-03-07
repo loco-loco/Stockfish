@@ -600,7 +600,7 @@ namespace {
 
     assert(0 <= ss->ply && ss->ply < MAX_PLY);
 
-    ss->currentMove = (ss+1)->excludedMove = bestMove = MOVE_NONE;
+    ss->currentMove = (ss+1)->excludedMove = ss->ttMove2 = bestMove = MOVE_NONE;
     ss->counterMoves = nullptr;
     (ss+2)->killers[0] = (ss+2)->killers[1] = MOVE_NONE;
     Square prevSq = to_sq((ss-1)->currentMove);
@@ -891,6 +891,12 @@ moves_loop: // When in check search starts from here
 
           if (value < rBeta)
               extension = ONE_PLY;
+          else
+          {
+            bool ttHit2;
+            TTEntry* tte2 = TT.probe(posKey ^ Key(ttMove), ttHit2);
+            ss->ttMove2 = ttHit2 ? tte2->move() : MOVE_NONE;
+          }
       }
 
       // Calculate new depth for this move
