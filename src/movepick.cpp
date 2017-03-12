@@ -227,6 +227,7 @@ Move MovePicker::next_move() {
       ++stage;
       move = countermove;
       if (    move != MOVE_NONE
+          &&  is_ok((ss-1)->currentMove)
           &&  move != ttMove
           &&  move != ss->killers[0]
           &&  move != ss->killers[1]
