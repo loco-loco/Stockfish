@@ -1193,7 +1193,7 @@ moves_loop: // When in check, search starts here
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
 
           // If the son is reduced and fails high it will be re-searched at full depth
-          doFullDepthSearch = value > alpha && d < newDepth;
+          doFullDepthSearch = value > alpha && d < newDepth - PvNode;
           doDeeperSearch = value > (alpha + 78 + 11 * (newDepth - d));
           didLMR = true;
       }
@@ -1221,10 +1221,9 @@ moves_loop: // When in check, search starts here
           }
       }
 
-      // For PV nodes only, do a full PV search on the first move or after a fail
-      // high (in the latter case search only if value < beta), otherwise let the
-      // parent node fail low with value <= alpha and try another move.
-      if (PvNode && (moveCount == 1 || (value > alpha && (rootNode || value < beta))))
+      // For PV nodes only, do a full PV search on the first move or after a fail high,
+      // otherwise let the parent node fail low with value <= alpha and try another move.
+      if (PvNode && (moveCount == 1 || value > alpha))
       {
           (ss+1)->pv = pv;
           (ss+1)->pv[0] = MOVE_NONE;
