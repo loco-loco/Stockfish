@@ -630,8 +630,7 @@ namespace {
     ttMove =  rootNode ? thisThread->rootMoves[thisThread->pvIdx].pv[0]
             : ss->ttHit    ? tte->move() : MOVE_NONE;
     ttCapture = ttMove && pos.capture(ttMove);
-    if (!excludedMove)
-        ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
+    ss->ttPv = PvNode || (ss->ttHit && tte->is_pv());
 
     // At non-PV nodes we check for an early TT cutoff
     if (  !PvNode
@@ -751,8 +750,7 @@ namespace {
         ss->staticEval = eval = evaluate(pos, &complexity);
 
         // Save static evaluation into transposition table
-        if (!excludedMove)
-            tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
+        tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
 
     thisThread->complexityAverage.update(complexity);
@@ -1063,9 +1061,17 @@ moves_loop: // When in check, search starts here
               Value singularBeta = ttValue - 3 * depth;
               Depth singularDepth = (depth - 1) / 2;
 
+              // Save Some values to restore later
+              Value tmp_staticEval = ss->staticEval;
+              bool tmp_ttHit = ss->ttHit;
+              bool tmp_ttPv = ss->ttPv;
               ss->excludedMove = move;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
+              ss->ttHit = tmp_ttHit;
+              ss->ttPv = tmp_ttPv;
+              ss->staticEval = tmp_staticEval;
+              ss->moveCount = moveCount;
 
               if (value < singularBeta)
               {
@@ -1367,7 +1373,7 @@ moves_loop: // When in check, search starts here
         ss->ttPv = ss->ttPv || ((ss-1)->ttPv && depth > 3);
 
     // Write gathered information in transposition table
-    if (!excludedMove && !(rootNode && thisThread->pvIdx))
+    if (!(rootNode && thisThread->pvIdx))
         tte->save(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
