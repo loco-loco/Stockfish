@@ -1063,9 +1063,17 @@ moves_loop: // When in check, search starts here
               Value singularBeta = ttValue - 3 * depth;
               Depth singularDepth = (depth - 1) / 2;
 
+              // Save Some values to restore later
+              Value tmp_staticEval = ss->staticEval;
+              bool tmp_ttHit = ss->ttHit;
+              bool tmp_ttPv = ss->ttPv;
               ss->excludedMove = move;
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
+              ss->ttHit = tmp_ttHit;
+              ss->ttPv = tmp_ttPv;
+              ss->staticEval = tmp_staticEval;
+              ss->moveCount = moveCount;
 
               if (value < singularBeta)
               {
