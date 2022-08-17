@@ -641,7 +641,7 @@ namespace {
         && (tte->bound() & (ttValue >= beta ? BOUND_LOWER : BOUND_UPPER)))
     {
         // If ttMove is quiet, update move sorting heuristics on TT hit (~1 Elo)
-        if (ttMove)
+        if (ttMove && !excludedMove)
         {
             if (ttValue >= beta)
             {
@@ -751,8 +751,7 @@ namespace {
         ss->staticEval = eval = evaluate(pos, &complexity);
 
         // Save static evaluation into transposition table
-        if (!excludedMove)
-            tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
+        tte->save(posKey, VALUE_NONE, ss->ttPv, BOUND_NONE, DEPTH_NONE, MOVE_NONE, eval);
     }
 
     thisThread->complexityAverage.update(complexity);
@@ -1067,6 +1066,11 @@ moves_loop: // When in check, search starts here
               value = search<NonPV>(pos, ss, singularBeta - 1, singularBeta, singularDepth, cutNode);
               ss->excludedMove = MOVE_NONE;
 
+              // Hack to keep consistance the logic to apply Extra penalty in update_all_stats().
+              // Simulating a missed TT.probe on subsearch.
+              ss->ttHit = false;
+              ss->moveCount = value < singularBeta ? 5 : 1;
+
               if (value < singularBeta)
               {
                   extension = 1;
@@ -1358,7 +1362,7 @@ moves_loop: // When in check, search starts here
         ss->ttPv = ss->ttPv || ((ss-1)->ttPv && depth > 3);
 
     // Write gathered information in transposition table
-    if (!excludedMove && !(rootNode && thisThread->pvIdx))
+    if (!(rootNode && thisThread->pvIdx))
         tte->save(posKey, value_to_tt(bestValue, ss->ply), ss->ttPv,
                   bestValue >= beta ? BOUND_LOWER :
                   PvNode && bestMove ? BOUND_EXACT : BOUND_UPPER,
@@ -1419,7 +1423,7 @@ moves_loop: // When in check, search starts here
     ttDepth = ss->inCheck || depth >= DEPTH_QS_CHECKS ? DEPTH_QS_CHECKS
                                                   : DEPTH_QS_NO_CHECKS;
     // Transposition table lookup
-    posKey = pos.key();
+    posKey = ss->excludedMove == MOVE_NONE ? pos.key() : pos.key() ^ make_key(ss->excludedMove);
     tte = TT.probe(posKey, ss->ttHit);
     ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
     ttMove = ss->ttHit ? tte->move() : MOVE_NONE;
