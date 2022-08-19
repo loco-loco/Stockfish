@@ -1392,7 +1392,7 @@ moves_loop: // When in check, search starts here
     Move ttMove, move, bestMove;
     Depth ttDepth;
     Value bestValue, value, ttValue, futilityValue, futilityBase;
-    bool pvHit, givesCheck, capture;
+    bool ttHit, givesCheck, capture;
     int moveCount;
 
     if (PvNode)
@@ -1420,13 +1420,12 @@ moves_loop: // When in check, search starts here
                                                   : DEPTH_QS_NO_CHECKS;
     // Transposition table lookup
     posKey = pos.key();
-    tte = TT.probe(posKey, ss->ttHit);
-    ttValue = ss->ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
-    ttMove = ss->ttHit ? tte->move() : MOVE_NONE;
-    pvHit = ss->ttHit && tte->is_pv();
+    tte = TT.probe(posKey, ttHit);
+    ttValue = ttHit ? value_from_tt(tte->value(), ss->ply, pos.rule50_count()) : VALUE_NONE;
+    ttMove = ttHit ? tte->move() : MOVE_NONE;
 
     if (  !PvNode
-        && ss->ttHit
+        && ttHit
         && tte->depth() >= ttDepth
         && ttValue != VALUE_NONE // Only in case of TT access race
         && (tte->bound() & (ttValue >= beta ? BOUND_LOWER : BOUND_UPPER)))
@@ -1440,7 +1439,7 @@ moves_loop: // When in check, search starts here
     }
     else
     {
-        if (ss->ttHit)
+        if (ttHit)
         {
             // Never assume anything about values stored in TT
             if ((ss->staticEval = bestValue = tte->eval()) == VALUE_NONE)
@@ -1461,7 +1460,7 @@ moves_loop: // When in check, search starts here
         if (bestValue >= beta)
         {
             // Save gathered info in transposition table
-            if (!ss->ttHit)
+            if (!ttHit)
                 tte->save(posKey, value_to_tt(bestValue, ss->ply), false, BOUND_LOWER,
                           DEPTH_NONE, MOVE_NONE, ss->staticEval);
 
@@ -1597,7 +1596,7 @@ moves_loop: // When in check, search starts here
     }
 
     // Save gathered info in transposition table
-    tte->save(posKey, value_to_tt(bestValue, ss->ply), pvHit,
+    tte->save(posKey, value_to_tt(bestValue, ss->ply), ttHit && tte->is_pv(),
               bestValue >= beta ? BOUND_LOWER : BOUND_UPPER,
               ttDepth, bestMove, ss->staticEval);
 
