@@ -1207,6 +1207,10 @@ moves_loop: // When in check, search starts here
 
               update_continuation_histories(ss, movedPiece, to_sq(move), bonus);
           }
+          else if (PvNode && value > alpha)
+          {
+              newDepth += (value > (alpha + 15));
+          }
       }
 
       // Step 18. Full depth search when LMR is skipped. If expected reduction is high, reduce its depth by 1.
