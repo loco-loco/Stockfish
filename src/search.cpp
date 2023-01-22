@@ -552,9 +552,9 @@ namespace {
     TTEntry* tte;
     Key posKey;
     Move ttMove, move, excludedMove, bestMove;
-    Depth extension, newDepth;
+    Depth extension, newDepth, baseR;
     Value bestValue, value, ttValue, eval, maxValue, probCutBeta;
-    bool givesCheck, improving, priorCapture, singularQuietLMR;
+    bool givesCheck, improving, priorCapture;
     bool capture, moveCountPruning, ttCapture;
     Piece movedPiece;
     int moveCount, captureCount, quietCount, improvement, complexity;
@@ -934,14 +934,42 @@ moves_loop: // When in check, search starts here
                                       ss->killers);
 
     value = bestValue;
-    moveCountPruning = singularQuietLMR = false;
+    moveCountPruning = false;
 
-    // Indicate PvNodes that will probably fail low if the node was searched
-    // at a depth equal or greater than the current depth, and the result of this search was a fail low.
-    bool likelyFailLow =    PvNode
-                         && ttMove
-                         && (tte->bound() & BOUND_UPPER)
-                         && tte->depth() >= depth;
+    // Store the base Reduction adjustment in LMR so we do not repeat for each move
+    baseR = 0;
+
+    // Decrease reduction if position is or has been on the PV
+    // and node is not likely to fail low. (~3 Elo)
+    if (ss->ttPv)
+    {
+        // Indicate PvNodes that will probably fail low if the node was searched
+        // at a depth equal or greater than the current depth, and the result of this search was a fail low.
+        bool likelyFailLow =    PvNode
+                             && ttMove
+                             && (tte->bound() & BOUND_UPPER)
+                             && tte->depth() >= depth;
+
+        if (!likelyFailLow)
+            baseR -= 2;
+    }
+
+    // Decrease reduction if opponent's move count is high (~1 Elo)
+    if ((ss-1)->moveCount > 7)
+        baseR--;
+
+    // Increase reduction for cut nodes (~3 Elo)
+    if (cutNode)
+        baseR += 2;
+
+    // Increase reduction if ttMove is a capture (~3 Elo)
+    if (ttCapture)
+        baseR++;
+
+    // Decrease reduction for PvNodes based on depth
+    if (PvNode)
+        baseR -= 1 + 11 / (3 + depth);
+
 
     // Step 13. Loop through all pseudo-legal moves until no moves remain
     // or a beta cutoff occurs.
@@ -1063,7 +1091,10 @@ moves_loop: // When in check, search starts here
               if (value < singularBeta)
               {
                   extension = 1;
-                  singularQuietLMR = !ttCapture;
+
+                  // singularQuietLMR: Decrease reduction if ttMove has been singularly extended (~1 Elo)
+                  if (!ttCapture)
+                     baseR--;
 
                   // Avoid search explosion by limiting the number of double extensions
                   if (  !PvNode
@@ -1106,12 +1137,12 @@ moves_loop: // When in check, search starts here
               extension = 1;
       }
 
+      // Speculative prefetch as early as possible
+      prefetch(TT.first_entry(pos.key_after(move)));
+
       // Add extension to new depth
       newDepth += extension;
       ss->doubleExtensions = (ss-1)->doubleExtensions + (extension == 2);
-
-      // Speculative prefetch as early as possible
-      prefetch(TT.first_entry(pos.key_after(move)));
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
@@ -1123,33 +1154,7 @@ moves_loop: // When in check, search starts here
       // Step 16. Make the move
       pos.do_move(move, st, givesCheck);
 
-      Depth r = reduction(improving, depth, moveCount, delta, thisThread->rootDelta);
-
-      // Decrease reduction if position is or has been on the PV
-      // and node is not likely to fail low. (~3 Elo)
-      if (   ss->ttPv
-          && !likelyFailLow)
-          r -= 2;
-
-      // Decrease reduction if opponent's move count is high (~1 Elo)
-      if ((ss-1)->moveCount > 7)
-          r--;
-
-      // Increase reduction for cut nodes (~3 Elo)
-      if (cutNode)
-          r += 2;
-
-      // Increase reduction if ttMove is a capture (~3 Elo)
-      if (ttCapture)
-          r++;
-
-      // Decrease reduction for PvNodes based on depth
-      if (PvNode)
-          r -= 1 + 11 / (3 + depth);
-
-      // Decrease reduction if ttMove has been singularly extended (~1 Elo)
-      if (singularQuietLMR)
-          r--;
+      Depth r = baseR + reduction(improving, depth, moveCount, delta, thisThread->rootDelta);
 
       // Decrease reduction if we move a threatened piece (~1 Elo)
       if (   depth > 9
