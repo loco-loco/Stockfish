@@ -1178,10 +1178,13 @@ moves_loop: // When in check, search starts here
                      + (*contHist[0])[movedPiece][to_sq(move)]
                      + (*contHist[1])[movedPiece][to_sq(move)]
                      + (*contHist[3])[movedPiece][to_sq(move)]
+                     + (ss->residualEval)
                      - 4006;
 
       // Decrease/increase reduction for moves with a good/bad history (~25 Elo)
-      r -= ss->statScore / (11124 + 4740 * (depth > 5 && depth < 22));
+      int denominator = 11124 + 4740 * (depth > 5 && depth < 22);
+      r -= ss->statScore / denominator;
+      Value residualEval = (Value) (ss->statScore % denominator);
 
       // Step 17. Late moves reduction / extension (LMR, ~117 Elo)
       // We use various heuristics for the sons of a node after the first son has
@@ -1198,7 +1201,9 @@ moves_loop: // When in check, search starts here
           // beyond the first move depth. This may lead to hidden double extensions.
           Depth d = std::clamp(newDepth - r, 1, newDepth + 1);
 
+          (ss+1)->residualEval = residualEval;
           value = -search<NonPV>(pos, ss+1, -(alpha+1), -alpha, d, true);
+          (ss+1)->residualEval = VALUE_ZERO;
 
           // Do a full-depth search when reduced LMR search fails high
           if (value > alpha && d < newDepth)
