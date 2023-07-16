@@ -946,7 +946,7 @@ moves_loop: // When in check, search starts here
       if (!rootNode && !pos.legal(move))
           continue;
 
-      ss->moveCount = ++moveCount;
+      ++moveCount;
 
       if (rootNode && thisThread == Threads.main() && Time.elapsed() > 3000)
           sync_cout << "info depth " << depth
@@ -1132,6 +1132,7 @@ moves_loop: // When in check, search starts here
 
       // Update the current move (this must be done after singular extension search)
       ss->currentMove = move;
+      ss->moveCount   = moveCount;
       ss->continuationHistory = &thisThread->continuationHistory[ss->inCheck]
                                                                 [capture]
                                                                 [movedPiece]
