@@ -94,7 +94,8 @@ class StatsEntry {
 
 enum StatsType {
     NoCaptures,
-    Captures
+    Captures,
+    InChecks
 };
 
 template<typename T, int D, std::size_t... Sizes>
